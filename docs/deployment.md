@@ -127,10 +127,10 @@ docker compose up -d postgres
 docker compose exec postgres pg_isready -U kratos -d kratos
 
 # Kratos 마이그레이션
-docker compose exec kratos kratos migrate sql -e /etc/config/kratos/kratos.yml --yes
+docker compose exec kratos kratos -c /etc/config/kratos/kratos.yml migrate sql -e --yes
 
 # Hydra 마이그레이션
-docker compose exec hydra hydra migrate sql -e /etc/config/hydra/hydra.yml --yes
+docker compose exec hydra hydra -c /etc/config/hydra/hydra.yml migrate sql -e --yes
 ```
 
 또는 번들 스크립트:

@@ -25,10 +25,10 @@ done
 
 echo "==> Running Kratos migrations..."
 docker compose run --rm --no-deps -T kratos \
-  kratos migrate sql -e /etc/config/kratos/kratos.yml --yes
+  -c /etc/config/kratos/kratos.yml migrate sql -e --yes
 
 echo "==> Running Hydra migrations..."
 docker compose run --rm --no-deps -T hydra \
-  hydra migrate sql -e /etc/config/hydra/hydra.yml --yes
+  -c /etc/config/hydra/hydra.yml migrate sql -e --yes
 
 echo "==> Migrations complete."
