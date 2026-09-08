@@ -1,0 +1,5 @@
+# Prisma generated client (recreated via `prisma generate`)
+src/generated/
+
+# OIDC signing keys (generated once at runtime)
+jwks.json

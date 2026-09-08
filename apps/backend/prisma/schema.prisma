@@ -1,0 +1,65 @@
+// Prisma schema for the inft-auth `auth` database.
+//
+// This database is owned by the backend and stores OAuth/OIDC runtime state
+// (clients, grants, tokens) and the platform session records. User identity
+// lives in the separate `lldap` database, which is owned by lldap itself and
+// never written to from here.
+
+generator client {
+  provider             = "prisma-client"
+  output               = "../src/generated/prisma"
+  moduleFormat         = "esm"
+  importFileExtension  = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url is configured in prisma.config.ts (Prisma ORM v7).
+}
+
+// A registered OAuth 2.0 / OIDC client, backed by the oidc-provider Client
+// adapter. Static clients (e.g. the Tailscale custom client) are seeded.
+model OidcClient {
+  clientId      String   @id
+  clientSecret  String?
+  grantTypes    String[] @default([])
+  responseTypes String[] @default([])
+  redirectUris  String[] @default([])
+  scopes        String[] @default([])
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Generic persistence for oidc-provider runtime models (AccessToken,
+// RefreshToken, AuthorizationCode, Interaction, Grant, etc.). Each row maps to
+// a single oidc-provider model instance identified by our adapter's `name` +
+// `id`.
+model OidcModel {
+  model     String
+  id        String
+  payload   Json
+  grantId   String?
+  expiresAt DateTime?
+
+  @@id([model, id])
+  @@index([grantId])
+  @@index([model, expiresAt])
+}
+
+// An authenticated session referenced by the `inft_session` cookie. The cookie
+// carries only the session id plus a signature; the profile lives here so it
+// can be revoked server-side.
+model Session {
+  id        String   @id
+  userId    String
+  provider  String
+  email     String
+  name      String
+  roles     String[] @default([])
+  issuedAt  DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  @@index([userId])
+}

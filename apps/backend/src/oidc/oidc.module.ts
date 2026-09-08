@@ -1,0 +1,31 @@
+/**
+ * OIDC module.
+ *
+ * Builds and exposes the shared `oidc-provider` {@link Provider} instance under
+ * the {@link OIDC_PROVIDER} token, wiring in the Prisma adapter and lldap-backed
+ * `findAccount`.
+ */
+
+import { Global, Module } from "@nestjs/common";
+import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { PrismaService } from "../prisma/prisma.service.js";
+import { LldapService } from "../lldap/lldap.service.js";
+import { LldapModule } from "../lldap/lldap.module.js";
+import { createProvider } from "./provider.factory.js";
+
+/** Injection token for the shared OIDC {@link Provider}. */
+export const OIDC_PROVIDER = Symbol("OIDC_PROVIDER");
+
+@Global()
+@Module({
+  imports: [LldapModule],
+  providers: [
+    {
+      provide: OIDC_PROVIDER,
+      inject: [APP_CONFIG, PrismaService, LldapService],
+      useFactory: createProvider,
+    },
+  ],
+  exports: [OIDC_PROVIDER],
+})
+export class OidcModule {}
