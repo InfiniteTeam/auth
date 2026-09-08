@@ -3,6 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { AuthShell } from '@/components/AuthShell';
 
 interface KratosError {
   id: string;
@@ -28,23 +29,16 @@ export default function ErrorPage() {
   }, [id]);
 
   return (
-    <main className="container">
-      <div className="card">
-        <h1>Error</h1>
-        <p className="subtitle">
-          {message || error?.message || 'An unexpected error occurred'}
-        </p>
-        {error?.reason && (
-          <p className="info" style={{ color: 'var(--fg-subtle)' }}>
-            {error.reason}
-          </p>
-        )}
+    <AuthShell requestLabel="요청 오류" requestName="인증을 완료하지 못했습니다">
+      <div className="card-heading">
+        <p>문제가 발생했습니다</p>
+        <h1>인증 요청을 처리할 수 없어요</h1>
+        <span>{message || error?.message || '잠시 후 다시 시도해 주세요.'}</span>
       </div>
-      <div className="card">
-        <Link className="btn btn-outline" href="/login">
-          Sign In
-        </Link>
+      {error?.reason ? <p className="error-detail">{error.reason}</p> : null}
+      <div className="inline-actions">
+        <Link className="btn btn-primary" href="/login">로그인으로 돌아가기</Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }

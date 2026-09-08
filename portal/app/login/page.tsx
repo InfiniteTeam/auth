@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Flow } from '@/components/Flow';
+import { AuthShell } from '@/components/AuthShell';
 import { useHandleGetFlowError } from '@/lib/flow-errors';
 import { frontendApi, LoginFlow } from '@/lib/sdk';
 
@@ -74,40 +75,36 @@ export default function LoginPage() {
     [flow, router, handleFlowError]
   );
 
-  return (
-    <main className="container">
-      <div className="card">
-        <h1>
-          {aal ? 'Two-Factor Authentication' : 'Sign In'}
-        </h1>
-        <p className="subtitle">
-          {flow?.refresh ? 'Confirm Action' : 'Sign in to your account'}
-        </p>
+  const title = aal ? '2단계 인증' : flow?.refresh ? '본인 확인' : '계정에 로그인';
+  const description = aal
+    ? '계정 보호를 위해 추가 인증을 완료해 주세요.'
+    : flow?.refresh
+      ? '중요한 작업을 계속하려면 다시 인증해 주세요.'
+      : 'Infinite Studio 계정으로 계속합니다.';
 
-        <Flow
-          flow={flow}
-          onSubmit={onSubmit}
-        />
+  return (
+    <AuthShell requestLabel="로그인 요청" requestName="Infinite Studio 계정">
+      <div className="card-heading">
+        <p>{aal ? '보안 확인' : '다시 만나 반가워요'}</p>
+        <h1>{title}</h1>
+        <span>{description}</span>
       </div>
 
-      {(aal || refresh) && logoutUrl && (
-        <div className="card">
-          <a className="btn btn-danger" href={logoutUrl}>
-            Sign Out
-          </a>
-        </div>
-      )}
+      <Flow flow={flow} onSubmit={onSubmit} />
 
-      {!aal && !refresh && (
-        <div className="card" style={{ display: 'flex', gap: '0.5rem' }}>
-          <Link className="btn btn-outline" href="/registration">
-            Create Account
-          </Link>
-          <Link className="btn btn-outline" href="/recovery">
-            Recover Account
-          </Link>
+      {(aal || refresh) && logoutUrl ? (
+        <div className="inline-actions">
+          <a className="btn btn-danger" href={logoutUrl}>다른 계정으로 로그인</a>
         </div>
-      )}
-    </main>
+      ) : null}
+
+      {!aal && !refresh ? (
+        <p className="account-note">
+          계정이 없으신가요? <Link href="/registration">계정 만들기</Link>
+          {' · '}
+          <Link href="/recovery">비밀번호 찾기</Link>
+        </p>
+      ) : null}
+    </AuthShell>
   );
 }

@@ -5,8 +5,24 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Flow } from '@/components/Flow';
+import { AuthShell } from '@/components/AuthShell';
 import { useHandleGetFlowError } from '@/lib/flow-errors';
 import { frontendApi, RegistrationFlow } from '@/lib/sdk';
+
+const HIDDEN_REGISTRATION_FIELDS = [
+  'id',
+  'credentials.password.type',
+  'credentials.oidc.identifiers',
+  'credentials.oidc.type',
+  'credentials.oidc.version',
+  'schema_id',
+  'state',
+  'state_changed_at',
+  'created_at',
+  'updated_at',
+  'traits.groups',
+  'traits.role',
+];
 
 export default function RegistrationPage() {
   const router = useRouter();
@@ -62,22 +78,22 @@ export default function RegistrationPage() {
   );
 
   return (
-    <main className="container">
-      <div className="card">
-        <h1>Create Account</h1>
-        <p className="subtitle">Sign up for Infiniteteam</p>
-
-        <Flow
-          flow={flow}
-          onSubmit={onSubmit}
-        />
+    <AuthShell requestLabel="새 계정" requestName="Infinite Studio 가입">
+      <div className="card-heading">
+        <p>시작하기</p>
+        <h1>계정 만들기</h1>
+        <span>하나의 계정으로 Infinite Studio의 모든 서비스를 이용하세요.</span>
       </div>
 
-      <div className="card">
-        <Link className="btn btn-outline" href="/login">
-          Sign In
-        </Link>
-      </div>
-    </main>
+      <Flow
+        flow={flow}
+        exclude={HIDDEN_REGISTRATION_FIELDS}
+        onSubmit={onSubmit}
+      />
+
+      <p className="account-note">
+        이미 계정이 있으신가요? <Link href="/login">로그인</Link>
+      </p>
+    </AuthShell>
   );
 }

@@ -8,6 +8,7 @@ import {
 import { getDiscordGuildFromIdentity } from '@/lib/server/discord';
 import { fetchIdentityById } from '@/lib/server/kratos';
 import { serverEnv } from '@/lib/server/config';
+import { AuthShell } from '@/components/AuthShell';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,58 +52,70 @@ export default async function ConsentPage({ searchParams }: PageProps) {
   }
 
   const scopes = consentRequest.requested_scope || [];
+  const clientName = consentRequest.client?.client_name || consentRequest.client?.client_id || '연결 서비스';
+  const scopeCopy: Record<string, { title: string; description: string }> = {
+    openid: { title: '계정 식별', description: '서비스에서 내 Infinite Studio 계정을 확인합니다.' },
+    email: { title: '이메일 주소', description: '계정 이메일과 인증 여부를 확인합니다.' },
+    profile: { title: '기본 프로필', description: '이름과 사용자 표시 정보를 확인합니다.' },
+    groups: { title: '소속 그룹', description: '서비스 접근에 필요한 그룹 정보를 확인합니다.' },
+    role: { title: '계정 권한', description: '허용된 기능을 결정하기 위한 역할을 확인합니다.' },
+    offline: { title: '오프라인 접근', description: '로그인 세션이 끝난 뒤에도 허용된 연결을 유지합니다.' },
+    offline_access: { title: '오프라인 접근', description: '로그인 세션이 끝난 뒤에도 허용된 연결을 유지합니다.' },
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div
-        className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 w-full"
-        style={{ maxWidth: '480px' }}
-      >
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Authorization Request</h1>
-        <p className="text-gray-600 mb-6">
-          <strong>{consentRequest.client?.client_name || consentRequest.client?.client_id || 'An application'}</strong>{' '}
-          is requesting access to your account.
-        </p>
+    <AuthShell requestLabel="권한 요청" requestName={clientName}>
+      <div className="card-heading">
+        <p>권한 확인</p>
+        <h1>{clientName}에 연결</h1>
+        <span>서비스가 요청한 정보만 확인하고 동의해 주세요.</span>
+      </div>
 
-        {scopes.length > 0 ? (
-          <div className="mb-6">
-            <p className="text-sm font-medium text-gray-700 mb-2">This will allow the application to:</p>
-            <ul className="space-y-1">
-              {scopes.map((scope) => (
-                <li key={scope} className="text-sm text-gray-600">
-                  <span className="text-emerald-600 mr-1">✓</span>
-                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{scope}</code>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+      {scopes.length > 0 ? (
+        <div className="permission-list" aria-label="요청 권한">
+          {scopes.map((scope) => {
+            const copy = scopeCopy[scope] || {
+              title: scope,
+              description: '서비스가 요청한 추가 권한입니다.',
+            };
+            return (
+              <div className="permission-item" key={scope}>
+                <b className="permission-icon">{scope.slice(0, 2)}</b>
+                <span className="permission-copy">
+                  <strong>{copy.title}</strong>
+                  <small>{copy.description}</small>
+                </span>
+                <span className="permission-check" aria-hidden="true">✓</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
 
-        <div className="flex gap-3">
-          <form method="POST" action="/oauth2/consent/action" className="flex-1">
+      <div className="consent-actions">
+          <form method="POST" action="/oauth2/consent/action">
             <input type="hidden" name="challenge" value={challenge} />
             <button
               type="submit"
               name="grant"
               value="accept"
-              className="w-full rounded-md bg-emerald-600 px-4 py-2 text-white text-sm font-medium hover:bg-emerald-700"
+              className="btn btn-primary"
             >
-              Allow
+              동의하고 계속
             </button>
           </form>
-          <form method="POST" action="/oauth2/consent/action" className="flex-1">
+          <form method="POST" action="/oauth2/consent/action">
             <input type="hidden" name="challenge" value={challenge} />
             <button
               type="submit"
               name="grant"
               value="deny"
-              className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 text-sm font-medium hover:bg-gray-50"
+              className="btn btn-outline"
             >
-              Deny
+              취소
             </button>
           </form>
-        </div>
       </div>
-    </div>
+    </AuthShell>
   );
 }

@@ -39,6 +39,7 @@ export interface FlowProps {
     id: string;
   };
   only?: Methods[];
+  exclude?: string[];
   onSubmit: (values: Record<string, unknown>) => Promise<void>;
   hideGlobalMessages?: boolean;
 }
@@ -46,6 +47,7 @@ export interface FlowProps {
 export function Flow({
   flow,
   only,
+  exclude,
   onSubmit,
   hideGlobalMessages,
 }: FlowProps) {
@@ -54,7 +56,9 @@ export function Flow({
 
   const filterNodes = (): UiNode[] => {
     if (!flow) return [];
-    return flow.ui.nodes.filter(({ group }) => {
+    return flow.ui.nodes.filter((node) => {
+      const { group } = node;
+      if (exclude?.includes(getNodeId(node))) return false;
       if (!only) return true;
       return group === 'default' || only.includes(group as Methods);
     });
@@ -116,16 +120,23 @@ export function Flow({
   };
 
   if (!flow) {
-    return null;
+    return (
+      <div className="flow-loading" role="status">
+        <span className="spinner" />
+        인증 정보를 불러오는 중입니다.
+      </div>
+    );
   }
 
   const nodes = filterNodes();
 
   return (
     <form
+      className="flow-form"
       action={flow.ui.action}
       method={flow.ui.method}
       onSubmit={handleSubmit}
+      aria-busy={isLoading}
     >
       {!hideGlobalMessages && <Messages messages={flow.ui.messages} />}
       {nodes.map((node, k) => {

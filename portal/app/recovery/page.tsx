@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Flow } from '@/components/Flow';
+import { AuthShell } from '@/components/AuthShell';
 import { useHandleGetFlowError } from '@/lib/flow-errors';
 import { frontendApi, RecoveryFlow } from '@/lib/sdk';
 
@@ -55,22 +56,16 @@ export default function RecoveryPage() {
   );
 
   return (
-    <main className="container">
-      <div className="card">
-        <h1>Recover Account</h1>
-        <p className="subtitle">Enter your email to recover your account</p>
-
-        <Flow
-          flow={flow}
-          onSubmit={onSubmit}
-        />
+    <AuthShell requestLabel="계정 복구" requestName="비밀번호 재설정">
+      <div className="card-heading">
+        <p>계정 복구</p>
+        <h1>비밀번호를 잊으셨나요?</h1>
+        <span>가입한 이메일을 입력하면 계정 복구 방법을 안내해 드립니다.</span>
       </div>
 
-      <div className="card">
-        <Link className="btn btn-outline" href="/login">
-          Back to Sign In
-        </Link>
-      </div>
-    </main>
+      <Flow flow={flow} onSubmit={onSubmit} />
+
+      <p className="account-note"><Link href="/login">로그인으로 돌아가기</Link></p>
+    </AuthShell>
   );
 }

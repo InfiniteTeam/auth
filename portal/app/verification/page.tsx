@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Flow } from '@/components/Flow';
+import { AuthShell } from '@/components/AuthShell';
 import { useHandleGetFlowError } from '@/lib/flow-errors';
 import { frontendApi, VerificationFlow } from '@/lib/sdk';
 
@@ -55,22 +56,16 @@ export default function VerificationPage() {
   );
 
   return (
-    <main className="container">
-      <div className="card">
-        <h1>Verify Email</h1>
-        <p className="subtitle">Confirm your email address</p>
-
-        <Flow
-          flow={flow}
-          onSubmit={onSubmit}
-        />
+    <AuthShell requestLabel="이메일 확인" requestName="계정 인증">
+      <div className="card-heading">
+        <p>이메일 인증</p>
+        <h1>이메일을 확인해 주세요</h1>
+        <span>인증 메일을 받을 주소 또는 전달받은 인증 코드를 입력하세요.</span>
       </div>
 
-      <div className="card">
-        <Link className="btn btn-outline" href="/login">
-          Back to Sign In
-        </Link>
-      </div>
-    </main>
+      <Flow flow={flow} onSubmit={onSubmit} />
+
+      <p className="account-note"><Link href="/login">로그인으로 돌아가기</Link></p>
+    </AuthShell>
   );
 }
