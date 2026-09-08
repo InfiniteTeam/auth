@@ -150,7 +150,6 @@ services:
 
 networks:
   identity-private:
-    internal: true
 
 volumes:
   postgres_data:
