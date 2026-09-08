@@ -100,14 +100,18 @@ courier:
     recovery:
       valid:
         email:
-          body: file:///etc/config/kratos/templates/recovery/valid.twig
+          body:
+            html: file:///etc/config/kratos/templates/recovery/valid.twig
       invalid:
         email:
-          body: file:///etc/config/kratos/templates/recovery/invalid.twig
+          body:
+            html: file:///etc/config/kratos/templates/recovery/invalid.twig
     verification:
       valid:
         email:
-          body: file:///etc/config/kratos/templates/verification/valid.twig
+          body:
+            html: file:///etc/config/kratos/templates/verification/valid.twig
       invalid:
         email:
-          body: file:///etc/config/kratos/templates/verification/invalid.twig
+          body:
+            html: file:///etc/config/kratos/templates/verification/invalid.twig
