@@ -1,0 +1,32 @@
+{
+  "name": "@inft/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Internal tooling shared across the inft-auth monorepo (docs generation, etc.)",
+  "bin": {
+    "generate-split-documentation": "./bin/generateSplitDocumentation.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": ["bin", "dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@microsoft/api-extractor-model": "^7.33.11",
+    "@microsoft/tsdoc": "^0.16.0",
+    "commander": "^12.1.0",
+    "typescript": "^5.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "tsup": "^8.3.5"
+  }
+}
