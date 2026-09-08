@@ -1,0 +1,203 @@
+{
+  "$id": "https://inft.kr/schemas/identity/default.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Person",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "uuid": true,
+      "title": "ID",
+      "description": "This represents a User ID",
+      "readOnly": true
+    },
+    "verifiable_addresses": {
+      "type": "array",
+      "title": "Verifiable Addresses",
+      "items": {
+        "$ref": "#/definitions/verifiableAddress"
+      }
+    },
+    "recovery_addresses": {
+      "type": "array",
+      "title": "Recovery Addresses",
+      "items": {
+        "$ref": "#/definitions/recoveryAddress"
+      }
+    },
+    "credentials": {
+      "type": "object",
+      "title": "Credentials",
+      "description": "All credentials used for the user",
+      "properties": {
+        "password": {
+          "$ref": "#/definitions/credentialPassword"
+        },
+        "oidc": {
+          "$ref": "#/definitions/credentialOIDC"
+        }
+      }
+    },
+    "schema_id": {
+      "type": "string",
+      "title": "Schema ID",
+      "description": "The ID of the JSON Schema",
+      "readOnly": true
+    },
+    "state": {
+      "type": "string",
+      "enum": ["active", "inactive"],
+      "title": "State",
+      "description": "The current state of the identity"
+    },
+    "state_changed_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "State Changed At",
+      "description": "The time the state was last changed"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At",
+      "description": "The time the identity was created"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At",
+      "description": "The time the identity was last updated"
+    },
+    "traits": {
+      "type": "object",
+      "title": "Traits",
+      "properties": {
+        "email": {
+          "type": "string",
+          "title": "E-Mail",
+          "format": "email",
+          "maxLength": 320,
+          "minLength": 5,
+          "ory.sh/sha256": true
+        },
+        "name": {
+          "type": "object",
+          "title": "Name",
+          "properties": {
+            "first": {
+              "type": "string",
+              "title": "First Name",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "last": {
+              "type": "string",
+              "title": "Last Name",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        },
+        "groups": {
+          "type": "array",
+          "title": "Groups",
+          "description": "User groups for role-based access control",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "role": {
+          "type": "string",
+          "title": "Role",
+          "description": "Primary role: user, admin",
+          "enum": ["user", "admin"],
+          "default": "user"
+        }
+      },
+      "required": ["email"],
+      "additionalProperties": false
+    }
+  },
+  "definitions": {
+    "verifiableAddress": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "verified_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "via": {
+          "type": "string",
+          "enum": ["email", "sms"]
+        },
+        "status": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "recoveryAddress": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "via": {
+          "type": "string",
+          "enum": ["email", "sms"]
+        }
+      }
+    },
+    "credentialPassword": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+          "config": {
+            "type": "object"
+          }
+      }
+    },
+    "credentialOIDC": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "config": {
+          "type": "object"
+        },
+        "version": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}

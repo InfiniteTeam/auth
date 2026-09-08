@@ -1,0 +1,12 @@
+# Staging override - docker compose -f compose.yaml -f compose.staging.yaml up -d
+services:
+  caddy:
+    environment:
+      DOMAIN_PORTAL: id.stg.inft.kr
+      DOMAIN_AUTH: auth.stg.inft.kr
+
+  portal:
+    environment:
+      NODE_ENV: production
+      SELF_URL: https://id.stg.inft.kr
+      HYDRA_ISSUER_URL: https://auth.stg.inft.kr

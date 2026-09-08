@@ -1,0 +1,69 @@
+serve:
+  public:
+    port: 4444
+    host: 0.0.0.0
+  admin:
+    port: 4445
+    host: 0.0.0.0
+  cookies:
+    same_site_mode: Lax
+  tls:
+    allow_insecure: false
+
+dsn: postgres://hydra:${POSTGRES_PASSWORD}@postgres:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
+
+urls:
+  self:
+    issuer: https://${DOMAIN_AUTH}
+  consent: https://${DOMAIN_PORTAL}/oauth2/consent
+  login: https://${DOMAIN_PORTAL}/oauth2/login
+  logout: https://${DOMAIN_PORTAL}/oauth2/logout
+  error: https://${DOMAIN_PORTAL}/error
+
+secrets:
+  system:
+    - ${HYDRA_SYSTEM_SECRET}
+
+oidc:
+  subject_identifiers:
+    supported_types:
+      - public
+  dynamic_client_registration:
+    enabled: false
+
+oauth2:
+  hashers:
+    bcrypt:
+      cost: 12
+  session:
+    encrypt_at_rest: false
+
+webfinger:
+  oidc_discovery:
+    supported_claims:
+      - email
+      - email_verified
+      - name
+      - given_name
+      - family_name
+      - picture
+      - locale
+      - groups
+      - role
+    supported_scope:
+      - openid
+      - offline
+      - offline_access
+      - email
+      - profile
+    userinfo_url: https://${DOMAIN_AUTH}/oauth2/userinfo
+    token_url: https://${DOMAIN_AUTH}/oauth2/token
+    jwks_url: https://${DOMAIN_AUTH}/.well-known/jwks.json
+
+log:
+  level: info
+  format: json
+  leak_sensitive_values: false
+
+security:
+  content_security_policy: default-src 'self'
