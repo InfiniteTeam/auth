@@ -1,21 +1,26 @@
 {
   "name": "@inft/auth-sdk",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "MIT",
-  "description": "INF Auth OIDC 클라이언트 SDK - 외부 서비스에서 OIDC 로그인/토큰 검증을 쉽게 연동하기 위한 라이브러리",
+  "description": "OpenID Connect client SDK for consumer services - login, id token verification (JWKS), token refresh and logout against inft-auth or any OIDC provider",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
     "build:docs": "tsc -p tsconfig.docs.json",
     "docs": "pnpm build:docs && mkdir -p docs && api-extractor run --local && generate-split-documentation",
     "prepublishOnly": "pnpm build && pnpm docs"
@@ -23,11 +28,33 @@
   "publishConfig": {
     "access": "public"
   },
-  "keywords": ["oidc", "oauth2", "sso", "authentication", "inft"],
+  "keywords": [
+    "oidc",
+    "oauth2",
+    "openid",
+    "jwt",
+    "sso",
+    "authentication",
+    "inft"
+  ],
+  "dependencies": {
+    "jose": "^6.2.12"
+  },
   "devDependencies": {
     "@inft/scripts": "workspace:*",
     "@microsoft/api-extractor": "^7.47.0",
+    "@types/node": "^26.5.0",
     "tsup": "^8.3.5",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/InfiniteTeam/auth.git",
+    "directory": "packages/auth-sdk"
+  },
+  "homepage": "https://github.com/InfiniteTeam/auth/tree/main/packages/auth-sdk",
+  "bugs": {
+    "url": "https://github.com/InfiniteTeam/auth/issues"
   }
 }
