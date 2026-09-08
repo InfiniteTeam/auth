@@ -1,6 +1,6 @@
 # Infiniteteam 통합 인증 시스템
 
-Infiniteteam 사내 통합 인증(SSO) 시스템입니다. Ory Kratos + Ory Hydra + PostgreSQL + Caddy + 자체 Identity Portal 구조로 구축되어 있으며, 여러 self-hosted 서비스가 `auth.inft.kr`을 OIDC issuer로 사용할 수 있게 합니다.
+Infiniteteam 사내 통합 인증(SSO) 시스템입니다. Ory Kratos + Ory Hydra + PostgreSQL + Cloudflare Tunnel(cloudflared) + 자체 Identity Portal 구조로 구축되어 있으며, 여러 self-hosted 서비스가 `auth.inft.kr`을 OIDC issuer로 사용할 수 있게 합니다.
 
 ## 아키텍처
 
@@ -9,15 +9,13 @@ flowchart LR
     subgraph Public[인터넷 / Cloudflare]
         U[사용자 브라우저]
         S[Self-hosted 서비스<br/>Portainer, Grafana 등]
-        CF["Cloudflare<br/>Full strict TLS"]
+        CF["Cloudflare<br/>Edge (TLS 종료)"]
+        TU["Cloudflare Tunnel"]
     end
 
     subgraph Server[Docker Compose 서버]
-        subgraph Edge[edge 네트워크]
-            C[Caddy :80/:443]
-        end
-
         subgraph Priv[identity-private 네트워크]
+            T[cloudflared]
             P[Portal :3000<br/>Identity Portal]
             K[Kratos :4433 public<br/>:4434 admin]
             H[Hydra :4444 public<br/>:4445 admin]
@@ -31,10 +29,12 @@ flowchart LR
         SMTP[SMTP]
     end
 
-    U -->|HTTPS| CF --> C
+    U -->|HTTPS| CF
     S -->|OIDC issuer| CF
-    C --> P
-    C -->|"/.well-known/*, /oauth2/*"| H
+    CF --- TU
+    TU --> T
+    T --> P
+    T -->|"/.well-known/*, /oauth2/*, /userinfo"| H
     P --> K
     P --> H
     P --> DB
@@ -50,10 +50,10 @@ flowchart LR
 
 | 구성 요소 | 역할 | 공개 URL | 외부 노출 |
 |-----------|------|----------|-----------|
-| Caddy | TLS 종료, reverse proxy, 보안 헤더 | `:80`, `:443` | 예 |
-| Identity Portal | Hydra login/consent/logout bridge, 로그인 UI | `https://id.inft.kr` | 예 (Caddy 경유) |
+| cloudflared | Cloudflare Tunnel agent, ingress 라우팅 | - | 예 (아웃바운드만) |
+| Identity Portal | Hydra login/consent/logout bridge, 로그인 UI | `https://id.inft.kr` | 예 (Tunnel 경유) |
 | Kratos | 사용자 identity, 이메일/비밀번호, 소셜 로그인, MFA, 이메일 검증 | 내부 `:4433/:4434` | 아니오 |
-| Hydra | OIDC issuer, OAuth 2.0, JWKS, token 발급 | `https://auth.inft.kr` | 예 (Caddy 경유) |
+| Hydra | OIDC issuer, OAuth 2.0, JWKS, token 발급 | `https://auth.inft.kr` | 예 (Tunnel 경유) |
 | PostgreSQL | Kratos/Hydra 영속 데이터 | 내부 `:5432` | 아니오 |
 
 - **Kratos public API**: `https://id.inft.kr/.kratos/`
@@ -69,15 +69,15 @@ flowchart LR
 sequenceDiagram
     participant U as 사용자
     participant CF as Cloudflare
-    participant C as Caddy
+    participant T as Tunnel(cloudflared)
     participant P as Portal
     participant K as Kratos
     participant H as Hydra
     participant DB as PostgreSQL
 
     U->>CF: id.inft.kr 방문 (https)
-    CF->>C: reverse proxy (Full strict TLS)
-    C->>P: /login
+    CF->>T: Cloudflare Tunnel
+    T->>P: /login
     P->>K: 로그인 flow 요청
     K->>DB: identity 조회
     K-->>U: 세션 cookie (ory_kratos_session)
@@ -169,8 +169,10 @@ auth/
 ├── compose.yaml                  # production Compose
 ├── compose.staging.yaml          # staging 오버라이드
 ├── .env.example                  # 환경 변수 템플릿
-├── caddy/
-│   └── Caddyfile                 # id/auth 라우팅, 보안 헤더
+├── cloudflared/
+│   ├── config.yml                # Tunnel ingress 라우팅 (Caddy 대체)
+│   ├── credentials.json          # Tunnel secret (Git 제외, 권한 600)
+│   └── credentials.json.example  # 형식 예시
 ├── config/
 │   ├── hydra/
 │   │   └── hydra.yml             # OIDC issuer, login/consent URL, PKCE
@@ -201,11 +203,9 @@ auth/
 
 - Ubuntu 24.04 LTS + (ARM64/aarch64 권장)
 - Docker Engine 29.x 이상, Docker Compose v2.x 이상
-- UFW: SSH/80/443만 공개
-- Cloudflare: 두 도메인 모두 **Proxied + SSL Full (strict)**
-  - `id.inft.kr` → 서버 공인 IP
-  - `auth.inft.kr` → 서버 공인 IP
-  - Flexible 암호화 모드 **금지**
+- **Cloudflare Tunnel** (cloudflared) 사용 — 외부 인바운드 포트 불필요 (80/443 닫기 가능)
+- Cloudflare: `inft.kr` 존에서 `id.inft.kr`·`auth.inft.kr` → **CNAME `<tunnel-uuid>.cfargotunnel.com` (Proxied)**
+  - 더 이상 서버 공인 IP를 직접 노출하지 않음
 
 ## 사용 설정 버전 (고정 tag)
 
@@ -216,7 +216,7 @@ auth/
 | `oryd/kratos` | `v26.2.0` |
 | `oryd/hydra` | `v26.2.0` |
 | `postgres` | `16` |
-| `caddy` | `2` |
+| `cloudflare/cloudflared` | `2026.8.2` |
 | `node` | `20-alpine` |
 
 ## 빠른 시작
@@ -273,7 +273,9 @@ Portainer UI → **Settings → Authentication → OAuth**에서:
 ## 보안 요약
 
 - 모든 admin API(Postgres 5432, Kratos 4434, Hydra 4445)는 **내부 네트워크 전용**
-- Caddy만 80/443 publish, JSON 로그, HSTS/CSP/X-Content-Type-Options/Referrer-Policy
+- **외부 공개 포트 없음** — Cloudflare Tunnel(cloudflared)이 아웃바운드로만 연결, 80/443 인바운드 불필요
+- Tunnel ingress에서 `auth.inft.kr/admin/*` → **403 차단**
+- Portal helmet으로 HSTS/nosniff/X-Frame-Options(DENY)/Referrer-Policy 적용 (Next.js 이전 시 headers()로 이관)
 - 소셜 병합 금지, Discord guild fail-closed, `admin` 수동 승인
 - Authorization Code + PKCE, redirect allowlist, 최소 claim
 - 브라우저 세션 쿠키는 `HttpOnly; Secure; SameSite=Lax`

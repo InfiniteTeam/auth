@@ -1,9 +1,15 @@
 # Staging override - docker compose -f compose.yaml -f compose.staging.yaml up -d
 services:
-  caddy:
+  hydra:
     environment:
-      DOMAIN_PORTAL: id.stg.inft.kr
-      DOMAIN_AUTH: auth.stg.inft.kr
+      URLS_SELF_ISSUER: https://auth.stg.inft.kr
+      URLS_CONSENT: https://id.stg.inft.kr/oauth2/consent
+      URLS_LOGIN: https://id.stg.inft.kr/oauth2/login
+      URLS_LOGOUT: https://id.stg.inft.kr/oauth2/logout
+      URLS_ERROR: https://id.stg.inft.kr/error
+      WEBFINGER_OIDC_DISCOVERY_USERINFO_URL: https://auth.stg.inft.kr/oauth2/userinfo
+      WEBFINGER_OIDC_DISCOVERY_TOKEN_URL: https://auth.stg.inft.kr/oauth2/token
+      WEBFINGER_OIDC_DISCOVERY_JWKS_URL: https://auth.stg.inft.kr/.well-known/jwks.json
 
   portal:
     environment:

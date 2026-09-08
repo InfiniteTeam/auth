@@ -16,7 +16,16 @@ const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 
 app.use(helmet({
   contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  strictTransportSecurity: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  frameguard: { action: 'deny' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
+app.disable('x-powered-by');
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

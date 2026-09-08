@@ -7,18 +7,16 @@ serve:
     host: 0.0.0.0
   cookies:
     same_site_mode: Lax
-  tls:
-    allow_insecure: false
 
 dsn: postgres://hydra:${POSTGRES_PASSWORD}@postgres:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
 
 urls:
   self:
-    issuer: https://${DOMAIN_AUTH}
-  consent: https://${DOMAIN_PORTAL}/oauth2/consent
-  login: https://${DOMAIN_PORTAL}/oauth2/login
-  logout: https://${DOMAIN_PORTAL}/oauth2/logout
-  error: https://${DOMAIN_PORTAL}/error
+    issuer: https://auth.inft.kr
+  consent: https://id.inft.kr/oauth2/consent
+  login: https://id.inft.kr/oauth2/login
+  logout: https://id.inft.kr/oauth2/logout
+  error: https://id.inft.kr/error
 
 secrets:
   system:
@@ -56,14 +54,11 @@ webfinger:
       - offline_access
       - email
       - profile
-    userinfo_url: https://${DOMAIN_AUTH}/oauth2/userinfo
-    token_url: https://${DOMAIN_AUTH}/oauth2/token
-    jwks_url: https://${DOMAIN_AUTH}/.well-known/jwks.json
+    userinfo_url: https://auth.inft.kr/oauth2/userinfo
+    token_url: https://auth.inft.kr/oauth2/token
+    jwks_url: https://auth.inft.kr/.well-known/jwks.json
 
 log:
   level: info
   format: json
   leak_sensitive_values: false
-
-security:
-  content_security_policy: default-src 'self'

@@ -5,6 +5,7 @@ services:
     networks: [identity-private]
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     environment:
       POSTGRES_DB: kratos
       POSTGRES_USER: kratos
@@ -71,7 +72,7 @@ services:
       KRATOS_SECRETS_CIPHER_0: ${KRATOS_CIPHER_SECRET}
       SELFSERVICE_SESSION_COOKIE_DOMAIN: ${DOMAIN_PORTAL}
       COURIER_SMTP_CONNECTION_URI: ${SMTP_CONNECTION_URI}
-      COURIER_SMTP_FROM_ADDRESS: noreply@${DOMAIN_PORTAL}
+      COURIER_SMTP_FROM_ADDRESS: noreply@${DOMAIN}
       LOG_LEVEL: info
       LOG_FORMAT: json
     healthcheck:
@@ -93,6 +94,7 @@ services:
       - ./config/hydra:/etc/config/hydra:ro
     environment:
       DSN: postgres://hydra:${POSTGRES_PASSWORD}@postgres:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
+      SECRETS_SYSTEM: ${HYDRA_SYSTEM_SECRET}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4445/health/ready || exit 1"]
       interval: 15s
@@ -131,27 +133,23 @@ services:
       retries: 3
       start_period: 20s
 
-  caddy:
-    image: caddy:2
+  cloudflared:
+    image: cloudflare/cloudflared:2026.8.2
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    networks: [edge, identity-private]
+    command: tunnel --no-autoupdate run
+    networks: [identity-private]
+    dns: 1.1.1.1
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - ./cloudflared/credentials.json:/etc/cloudflared/credentials.json:ro
     depends_on:
       portal:
         condition: service_healthy
+      hydra:
+        condition: service_healthy
 
 networks:
-  edge: {}
   identity-private:
-    internal: true
 
 volumes:
   postgres_data:
-  caddy_data:
-  caddy_config:
