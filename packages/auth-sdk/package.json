@@ -1,0 +1,33 @@
+{
+  "name": "@inft/auth-sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "INF Auth OIDC 클라이언트 SDK - 외부 서비스에서 OIDC 로그인/토큰 검증을 쉽게 연동하기 위한 라이브러리",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build:docs": "tsc -p tsconfig.docs.json",
+    "docs": "pnpm build:docs && mkdir -p docs && api-extractor run --local && generate-split-documentation",
+    "prepublishOnly": "pnpm build && pnpm docs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": ["oidc", "oauth2", "sso", "authentication", "inft"],
+  "devDependencies": {
+    "@inft/scripts": "workspace:*",
+    "@microsoft/api-extractor": "^7.47.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.5.4"
+  }
+}

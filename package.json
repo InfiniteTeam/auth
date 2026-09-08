@@ -1,0 +1,23 @@
+{
+  "name": "inft-auth",
+  "version": "0.0.0",
+  "private": true,
+  "description": "InfiniteTeam 통합 인증 플랫폼 (OAuth 2.0 / OIDC / LDAP / WebFinger / 소셜 로그인)",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "docs": "turbo run docs",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "turbo": "^2.10.12"
+  }
+}

@@ -1,9 +1,36 @@
-.env
-*.sql.gz
-backups/
+# dependencies
 node_modules/
-portal/node_modules/
-portal/.env
-secrets/*
-!secrets/.gitkeep
-cloudflared/credentials.json
+
+# build outputs
+.next/
+dist/
+dist-docs/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# api-extractor artifacts
+.tmp/
+temp/
+
+# turbo
+.turbo/
+
+# generated docs
+docs/
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+secrets/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/
