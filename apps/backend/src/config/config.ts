@@ -24,6 +24,8 @@ export interface AppConfig {
   lldapAdminDn: string;
   /** lldap service-account password. */
   lldapAdminPassword: string;
+  /** lldap group whose members receive every platform permission. */
+  lldapAdminGroupName: string;
 }
 
 function required(name: string, value: string | undefined): string {
@@ -51,6 +53,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       "LLDAP_ADMIN_PASSWORD",
       env.LLDAP_ADMIN_PASSWORD,
     ),
+    lldapAdminGroupName: env.ADMIN_GROUP_NAME ?? "admins",
   };
 }
 

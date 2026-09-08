@@ -51,15 +51,16 @@ model OidcModel {
 // carries only the session id plus a signature; the profile lives here so it
 // can be revoked server-side.
 model Session {
-  id        String   @id
-  userId    String
-  provider  String
-  email     String
-  name      String
-  roles     String[] @default([])
-  issuedAt  DateTime @default(now())
-  expiresAt DateTime
-  revokedAt DateTime?
+  id          String   @id
+  userId      String
+  provider    String
+  email       String
+  name        String
+  roles       String[] @default([])
+  permissions String   @default("0")
+  issuedAt    DateTime @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
 
   @@index([userId])
 }

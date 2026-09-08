@@ -54,6 +54,7 @@ export class AuthController {
         email: user.email,
         name: user.name,
         roles: user.roles,
+        permissions: user.permissions,
       });
       res.cookie(SESSION_COOKIE_NAME, cookieValue, SESSION_COOKIE);
       return session;

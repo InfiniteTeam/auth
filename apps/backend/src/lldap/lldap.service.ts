@@ -9,6 +9,7 @@
  */
 
 import { Inject, Injectable } from "@nestjs/common";
+import { PermissionBitField } from "@inft/shared";
 import type { Role } from "@inft/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
 
@@ -22,6 +23,8 @@ export interface LldapUser {
   name: string;
   /** Roles derived from lldap group membership. */
   roles: Role[];
+  /** Permission bitfield as a decimal string (e.g. `"7"`). */
+  permissions: string;
 }
 
 /**
@@ -65,6 +68,7 @@ export class LldapService {
       email,
       name: email,
       roles: ["user"] as Role[],
+      permissions: "0",
     };
     return user;
   }
@@ -136,12 +140,59 @@ export class LldapService {
     if (!user) {
       return undefined;
     }
+    const resolvedId = user.id ?? id;
+    const permissions = await this.permissionsFor(resolvedId);
     return {
-      id: user.id ?? id,
+      id: resolvedId,
       email: user.email ?? id,
       name: user.displayName ?? user.email ?? id,
       roles: ["user"],
+      permissions,
     };
+  }
+
+  /**
+   * Resolves a user's permission bitfield from lldap group membership.
+   *
+   * Members of the configured admin group receive every permission; everyone
+   * else receives none. Returns `"0"` when lldap is unreachable.
+   */
+  async permissionsFor(userId: string): Promise<string> {
+    const jwt = await this.serviceToken();
+    if (!jwt) {
+      return "0";
+    }
+    const query = `query { groups { id displayName users { id } } }`;
+    try {
+      const res = await fetch(`${this.config.lldapUrl}/api/graphql`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify({ query }),
+      });
+      if (!res.ok) {
+        return "0";
+      }
+      const data = (await res.json()) as {
+        data?: {
+          groups?: {
+            id?: string;
+            displayName?: string | null;
+            users?: { id?: string }[];
+          }[];
+        };
+      };
+      const isAdmin = data.data?.groups?.some(
+        (group) =>
+          group.displayName === this.config.lldapAdminGroupName &&
+          group.users?.some((member) => member.id === userId),
+      );
+      return isAdmin ? PermissionBitField.All.toString() : "0";
+    } catch {
+      return "0";
+    }
   }
 
   /**

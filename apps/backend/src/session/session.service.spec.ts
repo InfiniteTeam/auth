@@ -17,6 +17,7 @@ const config: AppConfig = {
   lldapUrl: "http://localhost:17170",
   lldapAdminDn: "admin",
   lldapAdminPassword: "test",
+  lldapAdminGroupName: "admins",
 };
 
 function createService(overrides: Record<string, unknown> = {}) {
@@ -43,6 +44,7 @@ describe("SessionService", () => {
       email: "devuser@inft.kr",
       name: "Dev User",
       roles: ["user"],
+      permissions: "0",
     });
     expect(res.cookieValue).toMatch(/^[0-9a-f-]+\.[0-9a-f]{64}$/);
     expect(prisma.session.create).toHaveBeenCalledTimes(1);
@@ -77,6 +79,7 @@ describe("SessionService", () => {
       email: "devuser@inft.kr",
       name: "Dev User",
       roles: ["user"],
+      permissions: "0",
     });
     (prisma.session.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: session.id,
@@ -85,6 +88,7 @@ describe("SessionService", () => {
       email: "devuser@inft.kr",
       name: "Dev User",
       roles: ["user"],
+      permissions: "0",
       issuedAt: new Date(),
       expiresAt: new Date(Date.now() + SESSION_COOKIE.maxAge * 1000),
       revokedAt: null,
@@ -92,6 +96,7 @@ describe("SessionService", () => {
     const resolved = await service.resolveSessionFromCookie(cookieValue);
     expect(resolved).not.toBeNull();
     expect(resolved?.user.userId).toBe("devuser");
+    expect(resolved?.user.permissions).toBe("0");
   });
 
   it("returns null for an expired session", async () => {
@@ -102,6 +107,7 @@ describe("SessionService", () => {
       email: "devuser@inft.kr",
       name: "Dev User",
       roles: ["user"],
+      permissions: "0",
     });
     (prisma.session.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: session.id,
@@ -127,6 +133,7 @@ describe("SessionService", () => {
       email: "devuser@inft.kr",
       name: "Dev User",
       roles: ["user"],
+      permissions: "0",
     });
     (prisma.session.updateMany as ReturnType<typeof vi.fn>).mockResolvedValue({
       count: 1,

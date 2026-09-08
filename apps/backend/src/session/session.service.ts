@@ -37,6 +37,8 @@ export interface CreateSessionInput {
   name: string;
   /** Roles assigned to the user. */
   roles: Role[];
+  /** Permission bitfield as a decimal string (e.g. `"7"`). */
+  permissions: string;
   /** Session lifetime in seconds (default 7 days). */
   ttlSeconds?: number;
 }
@@ -97,6 +99,7 @@ export class SessionService {
         email: input.email,
         name: input.name,
         roles: input.roles,
+        permissions: input.permissions,
         issuedAt: now,
         expiresAt,
       },
@@ -160,6 +163,7 @@ export class SessionService {
     email: string;
     name: string;
     roles: string[];
+    permissions: string;
     issuedAt: Date;
     expiresAt: Date;
   }): Session {
@@ -169,6 +173,7 @@ export class SessionService {
       email: row.email,
       name: row.name,
       roles: row.roles as Role[],
+      permissions: row.permissions,
     };
     return {
       id: row.id,
