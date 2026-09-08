@@ -1,0 +1,192 @@
+:root {
+  --bg: #ffffff;
+  --bg-subtle: #f5f5f7;
+  --fg: #1d1d1f;
+  --fg-subtle: #6e6e73;
+  --border: #d2d2d7;
+  --accent: #2f6fed;
+  --accent-contrast: #ffffff;
+  --danger: #d70015;
+  --radius: 8px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+}
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.subtitle {
+  color: var(--fg-subtle);
+  margin: 0 0 1.5rem;
+}
+
+.info {
+  font-size: 0.95rem;
+  margin: 0 0 1rem;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn-outline {
+  background: var(--bg);
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--accent-contrast);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"] {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.messages {
+  margin: 0 0 1rem;
+}
+
+.message {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem;
+}
+
+.message-error {
+  background: #ffeceb;
+  color: var(--danger);
+}
+
+.message-info {
+  background: var(--bg-subtle);
+  color: var(--fg);
+}
+
+.node-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ui-text,
+.ui-select,
+.ui-checkbox {
+  margin-bottom: 1rem;
+}
+
+.oidc-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1rem 0;
+  color: var(--fg-subtle);
+  font-size: 0.85rem;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+
+.divider:not(:empty)::before {
+  margin-right: 0.75em;
+}
+
+.divider:not(:empty)::after {
+  margin-left: 0.75em;
+}
+
+.meta {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--fg-subtle);
+}
