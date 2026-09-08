@@ -76,7 +76,7 @@ DISCORD_CLIENT_ID=<discord app client_id>
 DISCORD_CLIENT_SECRET=<discord app secret>
 DISCORD_BOT_TOKEN=<discord bot token>
 DISCORD_GUILD_ID=<target discord server id>
-SMTP_CONNECTION_URI=smtps://user:pass@smtp.example.com:465
+SMTP_CONNECTION_URI=smtps://user:pass@smtp.inft.kr:465
 ```
 
 > **보안**: `.env` 파일은 권한 600으로 유지하고 Git/Notion/채팅에 평문으로 노출하지 마세요.
