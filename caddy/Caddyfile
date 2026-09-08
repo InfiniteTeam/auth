@@ -1,0 +1,53 @@
+${DOMAIN_PORTAL} {
+    reverse_proxy portal:3000
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    log {
+        output stdout
+        format json
+    }
+}
+
+${DOMAIN_AUTH} {
+    @wellknown path /.well-known/openid-configuration /.well-known/jwks.json
+    handle @wellknown {
+        reverse_proxy hydra:4444
+    }
+
+    @oauth2 path /oauth2/*
+    handle @oauth2 {
+        reverse_proxy hydra:4444
+    }
+
+    handle /userinfo {
+        reverse_proxy hydra:4444
+    }
+
+    handle /admin/* {
+        respond "Forbidden" 403
+    }
+
+    handle {
+        reverse_proxy portal:3000
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    log {
+        output stdout
+        format json
+    }
+}

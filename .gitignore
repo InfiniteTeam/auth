@@ -1,1 +1,8 @@
 .env
+*.sql.gz
+backups/
+node_modules/
+portal/node_modules/
+portal/.env
+secrets/*
+!secrets/.gitkeep
