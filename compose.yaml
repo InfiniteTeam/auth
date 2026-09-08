@@ -5,6 +5,7 @@ services:
     networks: [identity-private]
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     environment:
       POSTGRES_DB: kratos
       POSTGRES_USER: kratos
