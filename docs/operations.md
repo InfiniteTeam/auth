@@ -149,7 +149,7 @@ docker compose exec -T hydra hydra revoke token --endpoint http://127.0.0.1:4445
 
 ```bash
 cd ~/auth-inft
-docker compose logs --tail=200 caddy kratos hydra portal postgres
+docker compose logs --tail=200 cloudflared kratos hydra portal postgres
 # 마이그레이션 필요 확인 후
 ./scripts/migrate.sh
 docker compose up -d
@@ -171,7 +171,8 @@ curl -fsS https://auth.inft.kr/.well-known/openid-configuration   # issuer 확�
 - Discord membership 거부 수
 - OAuth authorization/token error 수
 - PostgreSQL connection, disk, backup 성공 여부
-- TLS certificate 만료 예정 알림
+- cloudflared tunnel 연결 상태 (origin 연결 유실 감지) — `docker compose logs cloudflared`로 `Registered tunnel connection` 확인
+- TLS는 Cloudflare edge가 자동 관리 (수동 갱신 불필요)
 
 로그에는 password, OAuth code, access token, refresh token, client secret, Discord bot token을 남기지 마세요. identity UUID와 request ID로 추적합니다.
 

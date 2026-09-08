@@ -8,34 +8,40 @@
 
 - Ubuntu 24.04 LTS (arm64 권장)
 - Docker Engine 29.x + Docker Compose v2.x 설치됨
-- UFW: SSH/80/443만 허용
+- **Cloudflare Tunnel** 사용 (외부 인바운드 포트 불필요)
 - Cloudflare:
-  - `id.inft.kr`, `auth.inft.kr` → **Proxied (오렌지 클라우드)**
-  - **SSL/TLS Full (strict)** (Flexible 금지)
-  - `id.stg.inft.kr`, `auth.stg.inft.kr` → staging용 (없으면 먼저 생성)
+  - `inft.kr` 존: `id.inft.kr`, `auth.inft.kr` → **CNAME `<tunnel-uuid>.cfargotunnel.com` (Proxied)**
+  - staging용 `id.stg.inft.kr`, `auth.stg.inft.kr` (없으면 먼저 생성)
+- `cloudflared` CLI 또는 Tunnel:Edit 권한이 있는 API 토큰 (Tunnel 생성용)
 - GitHub OAuth App, Discord Application + Bot
 - SMTP 서버 creds
 
-## 0. 서버 상태 점검 (덮어쓰기 방지)
+## 0. Tunnel 생성 & DNS 준비
 
 ```bash
-# 도메인 해석 확인
-getent ahosts id.inft.kr
-getent ahosts auth.inft.kr
+# cloudflared CLI 설치 (서버에서)
+curl -L --output /tmp/cloudflared.deb \
+  "https://github.com/cloudflare/cloudflared/releases/download/2026.8.2/cloudflared-linux-$(dpkg --print-architecture).deb"
+sudo dpkg -i /tmp/cloudflared.deb
 
-# 기존 listen socket 확인 (80/443/5432/4433/4434/4444/4445)
-sudo ss -lntp '( sport = :80 or sport = :443 or sport = :5432 or sport = :4433 or sport = :4434 or sport = :4444 or sport = :4445 )'
+# 계정 로그인 (Tunnel:Edit 권한을 가진 토큰으로)
+cloudflared tunnel login
 
-# Docker 아키텍처
-docker info --format '{{.Architecture}}'
+# 로컬 관리형 tunnel 생성 -> TUNNEL_ID(UUID) 출력
+cloudflared tunnel create identity
+# ./cloudflared/credentials.json 가 자동 생성됨 (현재 시각 기준 기본 위치 ~/.cloudflared/)
+
+# 생성된 credentials.json을 repo의 cloudflared/ 로 복사 (권한 600, Git 제외)
+cp ~/.cloudflared/<tunnel-uuid>.json ./cloudflared/credentials.json
+chmod 600 ./cloudflared/credentials.json
+
+# cloudflared/config.yml 의 <TUNNEL_ID>를 실제 UUID로 치환
+sed -i 's/<TUNNEL_ID>/<실제-UUID>/' ./cloudflared/config.yml
 ```
 
-기대값:
-- `id`/`auth`가 서버 공인 IP로 해석
-- 배포 전에는 80/443 이외 인증 구성요소가 listen하지 않음
-- 아키텍처: `aarch64` 또는 `arm64`
-
-> 기존에 5432/4433/4434/4444/4445가 이미 listen 중이라면 **이미 배포된 서비스가 있을 수 있으므로** 계속하기 전에 확인하세요.
+그 후 Cloudflare 대시보드(또는 DNS API)에서:
+- `id.inft.kr` A → **CNAME `<tunnel-uuid>.cfargotunnel.com`** (Proxied)
+- `auth.inft.kr` A → **CNAME `<tunnel-uuid>.cfargotunnel.com`** (Proxied)
 
 ## 1. 저장소 복제 & secret 생성
 
@@ -91,19 +97,23 @@ staging 도메인으로 검증:
 # staging override를 사용해 기동
 docker compose -f compose.yaml -f compose.staging.yaml up -d --build
 docker compose -f compose.yaml -f compose.staging.yaml ps
-docker compose -f compose.yaml -f compose.staging.yaml logs --tail=100 caddy kratos hydra portal
+docker compose -f compose.yaml -f compose.staging.yaml logs --tail=100 cloudflared kratos hydra portal
 ```
 
 staging 검증 항목:
 ```bash
+# cloudflared tunnel 연결 확인
+docker compose -f compose.yaml -f compose.staging.yaml logs --tail=50 cloudflared
 # Kratos health
 curl -fsS https://id.stg.inft.kr/health          # Portal
 curl -fsS https://id.stg.inft.kr/.kratos/health/ready  # Kratos ready
 # Hydra discovery (issuer가 auth.stg.inft.kr인지)
 curl -fsS https://auth.stg.inft.kr/.well-known/openid-configuration
+# Hydra admin API가 차단되는지 (403 기대)
+curl -s -o /dev/null -w '%{http_code}\n' https://auth.stg.inft.kr/admin/ignore
 ```
 
-> Cloudflare에서 staging subdomain(`id.stg.inft.kr`, `auth.stg.inft.kr`)의 DNS 레코드를 먼저 **Proxied + Full (strict)**로 만들어야 합니다.
+> Cloudflare에서 staging subdomain(`id.stg.inft.kr`, `auth.stg.inft.kr`)의 DNS 레코드를 먼저 **CNAME `<tunnel-uuid>.cfargotunnel.com` (Proxied)** 로 만들어야 합니다.
 
 ## 3. DB 마이그레이션
 
@@ -131,7 +141,7 @@ docker compose exec hydra hydra migrate sql -e /etc/config/hydra/hydra.yml --yes
 ```bash
 docker compose up -d --build
 docker compose ps
-docker compose logs --tail=100 caddy kratos hydra portal
+docker compose logs --tail=100 cloudflared kratos hydra portal
 ./scripts/healthcheck.sh
 ```
 
@@ -185,9 +195,9 @@ docker compose exec -T hydra hydra create client \
 
 production 전환 전 다음을 반드시 확인합니다:
 - [ ] `.env`에 staging이 아닌 production OAuth app 값 (GitHub/Discord)이 들어있는지
-- [ ] Cloudflare SSL **Full (strict)** / proxied 확인
+- [ ] Cloudflare `id.inft.kr`·`auth.inft.kr` → CNAME `<tunnel-uuid>.cfargotunnel.com` (Proxied)
 - [ ] discovery issuer가 `auth.inft.kr` (staging이 아님)
-- [ ] external 포트는 80/443뿐
+- [ ] 외부 인바운드 포트 없음 (80/443 닫힘 — Tunnel로만 공개)
 - [ ] `docker compose ps` 전 서비스 healthy
 - [ ] backup script 테스트 완료 ([operations.md](operations.md) 참고)
 
@@ -195,9 +205,11 @@ production 전환 전 다음을 반드시 확인합니다:
 
 | 증상 | 확인 사항 |
 |------|-----------|
-| Caddy 인증서 발급 실패 | `docker compose logs caddy`의 ACME 오류 / Cloudflare proxied + 80/443 open |
+| Tunnel 연결 안 됨 | `docker compose logs cloudflared` / `credentials.json`·`config.yml`의 tunnel UUID 일치 확인 |
+| DNS가 서버가 아닌 곳으로 감 | `id`/`auth`가 CNAME `<tunnel-uuid>.cfargotunnel.com` (Proxied)인지 |
 | Kratos unhealthy | `docker compose logs kratos` / **마이그레이션 실행 여부** |
-| Hydra discovery 404 | `/admin/*` 차단 라우팅이 discovery를 가로막지 않았는지 / `auth` host가 Hydra로 가는지 |
+| Hydra discovery 404 | Tunnel ingress `/.well-known`이 hydra로 가는지 / `/admin/*` 차단이 discovery를 가로막지 않았는지 |
+| `auth/admin/*`가 200 | Tunnel ingress에서 `/admin/*` → `http_status:403` 확인 |
 | 소셜 로그인 실패 | callback URL이 OAuth app에 정확히 등록됐는지 / `.env` 값 |
 | Discord 거부 | 사용자가 target guild 구성원인지 / `DISCORD_BOT_TOKEN` 권한(`guilds.members.read`) |
 | PKCE 400 | client가 `code_challenge`/`code_verifier`를 보내는지 |

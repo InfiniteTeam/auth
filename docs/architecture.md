@@ -12,15 +12,15 @@ Kratos는 표준 OIDC provider가 아니어서 다른 서비스에 OIDC token을
 
 | 구성 요소 | 외부 노출 | 내부 URL | 책임 |
 |-----------|-----------|----------|------|
-| Caddy | `:80`, `:443` | - | TLS 종료, reverse proxy, 보안 헤더, admin API 차단 |
+| cloudflared | Tunnel ingress | - | Cloudflare와 아웃바운드 연결, ingress 라우팅, `/admin/*` 403 차단 |
 | Portal | `id.inft.kr` | `http://portal:3000` | Hydra login/consent/logout bridge, 로그인 UI, Discord guild 검사, claim 생성 |
 | Kratos | - | `http://kratos:4433` (public), `http://kratos:4434` (admin) | 신원, 이메일/비밀번호, 소셜 로그인, MFA, 이메일 검증/복구, 브라우저 세션 |
 | Hydra | `auth.inft.kr` | `http://hydra:4444` (public), `http://hydra:4445` (admin) | OAuth 2.0/OIDC, JWKS, authorization code, token 발급 |
 | PostgreSQL | - | `http://postgres:5432` | Kratos/Hydra 영속 데이터 |
 
 Docker network 경계:
-- `edge`: Caddy만 (공개 트래픽 진입점)
-- `identity-private` (`internal: true`): Portal, Kratos, Hydra, PostgreSQL
+- 모든 서비스가 `identity-private` (`internal: true`) 네트워크에 있음
+- cloudflared만 **아웃바운드**로 Cloudflare에 연결 — 서버에 공개 인바운드 포트가 없음
 
 ## 도메인 매핑
 
@@ -31,20 +31,21 @@ Docker network 경계:
 
 `id`와 `auth`를 분리하는 이유는 OIDC discovery URL(`auth.inft.kr/.well-known/openid-configuration`)과 token issuer를 안정적으로 고정하기 위함입니다. Portal을 `id`에, Kratos 세션 쿠키 도메인도 `id`로 두어 session cookie를 Portal이 안전하게 재사용합니다.
 
-## Caddy 라우팅
+## Tunnel ingress 라우팅
 
-Caddyfile 요약:
+`cloudflared/config.yml`의 ingress 규칙 (기존 Caddyfile 라우팅을 그대로 재현):
 
 ```
-id.inft.kr   → reverse_proxy portal:3000                     (로그인/UI 전체)
-auth.inft.kr ┬ /.well-known/* → hydra:4444                   (discovery, JWKS)
-             ├ /oauth2/*      → hydra:4444                   (auth/token/userinfo)
-             ├ /userinfo      → hydra:4444
-             ├ /admin/*       → 403 Forbidden                (관리 API 차단)
-             └ fallback       → portal:3000                  (login/consent/logout)
+id.inft.kr   → http://portal:3000                                   (로그인/UI 전체)
+auth.inft.kr ┬ /.well-known/* → http://hydra:4444                   (discovery, JWKS)
+             ├ /oauth2/*      → http://hydra:4444                   (auth/token/userinfo)
+             ├ /userinfo      → http://hydra:4444
+             ├ /admin/*       → http_status:403                     (관리 API 차단)
+             └ fallback       → http://portal:3000                  (login/consent/logout)
 ```
 
-모든 경로에 HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` 헤더를 적용하고 JSON 로그를 남깁니다.
+- Cloudflare 엣지가 TLS를 종료하고, cloudflared가 콘텐츠를 내부 `http://` origin으로 전달.
+- 보안 헤더(HSTS, nosniff, X-Frame-Options, Referrer-Policy)는 Portal의 helmet 미들웨어가 적용.
 
 ## Identity 스키마
 
@@ -183,7 +184,7 @@ sequenceDiagram
     participant U as 사용자
     participant PT as Portainer
     participant CF as Cloudflare
-    participant C as Caddy
+    participant T as Tunnel(cloudflared)
     participant H as Hydra
     participant P as Portal
     participant K as Kratos
@@ -191,7 +192,7 @@ sequenceDiagram
 
     U->>PT: Portainer 접속, 로그인 클릭
     PT->>H: GET auth.inft.kr/oauth2/auth?client_id=portainer&response_type=code&code_challenge=...
-    CF->>H: (Caddy 경유)
+    H->>H: (Cloudflare → Tunnel 경유)
     H->>P: /oauth2/login (login_challenge)
     P->>K: 세션 whoami
     alt 세션 있음
@@ -223,13 +224,13 @@ sequenceDiagram
 
 ## 보안 경계 요약
 
-- 외부 공개 포트: **80, 443뿐** (Caddy만 publish)
+- 외부 공개 포트 없음 — cloudflared가 Cloudflare에 아웃바운드로만 연결
 - Kratos admin(4434), Hydra admin(4445), PostgreSQL(5432)은 **내부 network 전용**
-- `auth.inft.kr/admin/*` → Caddy에서 403 차단
+- Tunnel ingress: `auth.inft.kr/admin/*` → `http_status:403` 차단 (기존 Caddy와 동일)
+- Portal helmet: HSTS / nosniff / X-Frame-Options(DENY) / Referrer-Policy (Next.js 이전 시 headers()로 이관)
 - 소셜 병합 금지, Discord fail-closed, `admin` 수동 승인
 - 브라우저 세션 쿠키: `HttpOnly; Secure; SameSite=Lax`, `secure: true`
 - JSON 구조화 로그 (token/secret 미기록)
-- HSTS / CSP / X-Content-Type-Options / Referrer-Policy 적용
 
 ## 첫 연동 서비스: Portainer
 

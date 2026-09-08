@@ -1,0 +1,30 @@
+tunnel: 60e2cd3b-957c-4081-bad5-316fdbcfea98
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  # id.inft.kr -> Identity Portal (login/consent/logout UI 전체)
+  - hostname: id.inft.kr
+    service: http://portal:3000
+
+  # auth.inft.kr (OIDC issuer) -> OIDC/Hydra 관련은 Hydra로
+  - hostname: auth.inft.kr
+    path: /.well-known/*
+    service: http://hydra:4444
+  - hostname: auth.inft.kr
+    path: /oauth2/*
+    service: http://hydra:4444
+  - hostname: auth.inft.kr
+    path: /userinfo
+    service: http://hydra:4444
+
+  # Hydra admin API 차단 (기존 Caddy가 403 처리한 부분)
+  - hostname: auth.inft.kr
+    path: /admin/*
+    service: http_status:403
+
+  # auth.inft.kr 나머지 -> Portal (login/consent/logout bridge)
+  - hostname: auth.inft.kr
+    service: http://portal:3000
+
+  # 매칭 안 되는 모든 요청 차단
+  - service: http_status:404

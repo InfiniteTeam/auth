@@ -6,3 +6,4 @@ portal/node_modules/
 portal/.env
 secrets/*
 !secrets/.gitkeep
+cloudflared/credentials.json

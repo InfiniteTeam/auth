@@ -1,10 +1,5 @@
 # Staging override - docker compose -f compose.yaml -f compose.staging.yaml up -d
 services:
-  caddy:
-    environment:
-      DOMAIN_PORTAL: id.stg.inft.kr
-      DOMAIN_AUTH: auth.stg.inft.kr
-
   portal:
     environment:
       NODE_ENV: production
