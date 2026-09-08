@@ -1,0 +1,30 @@
+services:
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    networks: [edge, identity-private]
+
+  postgres:
+    image: postgres:16
+    networks: [identity-private]
+
+  kratos:
+    image: oryd/kratos:${KRATOS_VERSION}
+    command: serve -c /etc/config/kratos/kratos.yml
+    networks: [identity-private]
+
+  hydra:
+    image: oryd/hydra:${HYDRA_VERSION}
+    command: serve -c /etc/config/hydra/hydra.yml all --dev=false
+    networks: [identity-private]
+
+  portal:
+    image: <PRIVATE_REGISTRY>/identity-portal:<TAG>
+    networks: [identity-private]
+
+networks:
+  edge: {}
+  identity-private:
+    internal: true
