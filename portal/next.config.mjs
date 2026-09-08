@@ -2,6 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+  allowedDevOrigins: ['testdev2.kho.kr'],
   async rewrites() {
     return [
       {
