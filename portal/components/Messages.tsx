@@ -1,4 +1,5 @@
 import { UiText } from '@ory/client';
+import { translateUiText } from '@/lib/ui-helpers';
 
 function Message({ message }: { message: UiText }) {
   const isError = message.type === 'error';
@@ -7,7 +8,7 @@ function Message({ message }: { message: UiText }) {
       className={`message ${isError ? 'message-error' : 'message-info'}`}
       data-testid={`ui/message/${message.id}`}
     >
-      {message.text}
+      {translateUiText(message.text)}
     </div>
   );
 }

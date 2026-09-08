@@ -1,11 +1,11 @@
-import { getNodeLabel, NodeInputProps } from '@/lib/ui-helpers';
+import { getNodeLabel, NodeInputProps, translateUiText } from '@/lib/ui-helpers';
 
 export function NodeInputCheckbox({ node, attributes, setValue, disabled }: NodeInputProps) {
   const hasError = node.messages?.some(({ type }) => type === 'error');
 
   return (
     <div className="ui-checkbox">
-      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+      <label>
         <input
           type="checkbox"
           name={attributes.name}
@@ -17,7 +17,7 @@ export function NodeInputCheckbox({ node, attributes, setValue, disabled }: Node
       </label>
       {hasError && node.messages?.map((msg, k) => (
         <div key={`${msg.id}-${k}`} className="message message-error" data-testid={`ui/message/${msg.id}`}>
-          {msg.text}
+          {translateUiText(msg.text)}
         </div>
       ))}
     </div>

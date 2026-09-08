@@ -1,4 +1,4 @@
-import { getNodeLabel, isUiNodeInputAttributes, NodeInputProps } from '@/lib/ui-helpers';
+import { getNodeLabel, NodeInputProps, translateUiText } from '@/lib/ui-helpers';
 
 export function NodeInputDefault(props: NodeInputProps) {
   const { node, attributes, value = '', setValue, disabled } = props;
@@ -17,12 +17,14 @@ export function NodeInputDefault(props: NodeInputProps) {
         value={(value as string) || ''}
         onChange={(e) => setValue(e.target.value)}
         disabled={attributes.disabled || disabled}
+        autoComplete={attributes.name === 'identifier' ? 'username' : undefined}
+        aria-invalid={hasError || undefined}
         onClick={attributes.onclick ? () => { const run = new Function(attributes.onclick as string); run(); } : undefined}
         style={{ borderColor: hasError ? 'var(--danger)' : undefined }}
       />
       {node.messages?.map((msg, k) => (
-        <div key={`${msg.id}-${k}`} className="message message-info" data-testid={`ui/message/${msg.id}`}>
-          {msg.text}
+        <div key={`${msg.id}-${k}`} className={`message ${msg.type === 'error' ? 'message-error' : 'message-info'}`} data-testid={`ui/message/${msg.id}`}>
+          {translateUiText(msg.text)}
         </div>
       ))}
     </div>
