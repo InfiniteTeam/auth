@@ -94,8 +94,10 @@ docker compose -f compose.yaml -f compose.staging.yaml config --quiet && echo "s
 
 staging 도메인으로 검증:
 ```bash
-# staging override를 사용해 기동
-docker compose -f compose.yaml -f compose.staging.yaml up -d --build
+# staging override를 사용해 기동 (마이그레이션 포함)
+./scripts/start.sh --staging
+# 또는 마이그레이션 없이 기동
+./scripts/start.sh --staging --skip-migrate
 docker compose -f compose.yaml -f compose.staging.yaml ps
 docker compose -f compose.yaml -f compose.staging.yaml logs --tail=100 cloudflared kratos hydra portal
 ```
@@ -116,6 +118,8 @@ curl -s -o /dev/null -w '%{http_code}\n' https://auth.stg.inft.kr/admin/ignore
 > Cloudflare에서 staging subdomain(`id.stg.inft.kr`, `auth.stg.inft.kr`)의 DNS 레코드를 먼저 **CNAME `<tunnel-uuid>.cfargotunnel.com` (Proxied)** 로 만들어야 합니다.
 
 ## 3. DB 마이그레이션
+
+마이그레이션은 `start.sh`에 기본 포함되어 있어 처음 기동할 때 자동 실행됩니다. 별도로만 실행하려면:
 
 ```bash
 cd ~/auth-inft
@@ -139,7 +143,9 @@ docker compose exec hydra hydra migrate sql -e /etc/config/hydra/hydra.yml --yes
 ## 4. 전체 기동 (production)
 
 ```bash
-docker compose up -d --build
+./scripts/start.sh                 # postgres + 마이그레이션 + 전체 기동
+# 마이그레이션 없이 재기동만:
+./scripts/start.sh --skip-migrate
 docker compose ps
 docker compose logs --tail=100 cloudflared kratos hydra portal
 ./scripts/healthcheck.sh
