@@ -138,6 +138,7 @@ services:
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     networks: [identity-private]
+    dns: 1.1.1.1
     volumes:
       - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
       - ./cloudflared/credentials.json:/etc/cloudflared/credentials.json:ro
