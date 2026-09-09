@@ -10,17 +10,13 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import type { AuthProvider, Role, Session, SessionUser } from "@inft/shared";
-import { SESSION_COOKIE_NAME } from "@inft/shared";
+import { SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@inft/shared";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
 
 /** HTTP-only session cookie options. `secure` is set per environment. */
-export const SESSION_COOKIE = {
-  httpOnly: true,
-  sameSite: "lax" as const,
-  path: "/",
-  maxAge: 60 * 60 * 24 * 7, // 7 days, matches SESSION_COOKIE_OPTIONS in @inft/shared
-};
+const { secure: _secure, ...BASE_SESSION_COOKIE } = SESSION_COOKIE_OPTIONS;
+export const SESSION_COOKIE = BASE_SESSION_COOKIE;
 
 /**
  * Payload used to mint a {@link Session}.
