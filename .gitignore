@@ -16,8 +16,14 @@ temp/
 # turbo
 .turbo/
 
-# generated docs
-docs/
+# generated docs (package API artifacts; root docs/ guide is tracked)
+**/docs/
+!/docs/
+!/apps/docs/
+
+# fumadocs generated content
+.source
+apps/docs/content/api/
 
 # env / secrets
 .env
