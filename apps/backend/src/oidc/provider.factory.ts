@@ -121,7 +121,7 @@ export function createProvider(
       Session: 60 * 60 * 24 * 14,
     },
     features: {
-      devInteractions: { enabled: true },
+      devInteractions: { enabled: config.nodeEnv !== "production" },
       resourceIndicators: { enabled: false },
     },
   };

@@ -28,13 +28,13 @@ export class WebFingerController {
 
   /**
    * Resolves a WebFinger resource association. The `resource` query parameter
-   * is required; the response links the `acct` resource to the OIDC issuer.
+   * follows RFC 7033; when omitted the controller falls back to resolving for
+   * the platform domain itself (`acct:user@{domain}`).
    */
   @Get()
   @ApiOperation({ summary: "WebFinger resource descriptor (RFC 7033)" })
-  @ApiQuery({ name: "resource", required: true })
+  @ApiQuery({ name: "resource", required: false })
   @ApiResponse({ status: 200, description: "JSON Resource Descriptor" })
-  @ApiResponse({ status: 400, description: "Missing resource parameter" })
   getWebFinger(@Query("resource") resource?: string): WebFingerResponse {
     const acct = resource ?? `acct:user@${DOMAIN_ROOT}`;
     const issuer = this.config.issuerUrl || OIDC_ISSUER;

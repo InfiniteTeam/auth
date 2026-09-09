@@ -28,7 +28,10 @@ function session(permissions?: string): Session {
   };
 }
 
-function makeContext(permissions?: string): ExecutionContext {
+function makeContext(
+  permissions?: string,
+  controllerClass?: new () => unknown,
+): ExecutionContext {
   const handler = () => "handler";
   const req: { session?: Session } = {};
   if (permissions) {
@@ -36,6 +39,7 @@ function makeContext(permissions?: string): ExecutionContext {
   }
   return {
     getHandler: () => handler,
+    getClass: () => controllerClass,
     switchToHttp: () => ({
       getRequest: () => req as never,
     }),
@@ -115,5 +119,39 @@ describe("PermissionsGuard", () => {
     context.getHandler = () => handler;
     const guard = new PermissionsGuard(sessionGuard);
     await expect(guard.canActivate(context)).resolves.toBe(true);
+  });
+
+  it("reads controller-level permissions when the handler has none", async () => {
+    class ClientsController {}
+    Reflect.defineMetadata(
+      PERMISSIONS_KEY,
+      [PermissionFlags.OidcClientRead],
+      ClientsController,
+    );
+    const sessionGuard = {
+      canActivate: vi.fn().mockResolvedValue(true),
+    } as unknown as SessionGuard;
+    const guard = new PermissionsGuard(
+      sessionGuard,
+    );
+    await expect(
+      guard.canActivate(makeContext("1", ClientsController)),
+    ).resolves.toBe(true);
+  });
+
+  it("throws Forbidden for controller-level permissions the user lacks", async () => {
+    class ClientsController {}
+    Reflect.defineMetadata(
+      PERMISSIONS_KEY,
+      [PermissionFlags.OidcClientCreate],
+      ClientsController,
+    );
+    const sessionGuard = {
+      canActivate: vi.fn().mockResolvedValue(true),
+    } as unknown as SessionGuard;
+    const guard = new PermissionsGuard(sessionGuard);
+    await expect(
+      guard.canActivate(makeContext("1", ClientsController)),
+    ).rejects.toThrow(ForbiddenException);
   });
 });

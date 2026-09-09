@@ -51,7 +51,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     issuerUrl: required("ISSUER_URL", env.ISSUER_URL),
     sessionSecret: required("SESSION_SECRET", env.SESSION_SECRET),
     jwksPath: env.OIDC_JWKS_PATH ?? "./jwks.json",
-    tailscaleClientSecret: env.TAILSCALE_CLIENT_SECRET ?? "",
+    tailscaleClientSecret: required(
+      "TAILSCALE_CLIENT_SECRET",
+      env.TAILSCALE_CLIENT_SECRET,
+    ),
     databaseUrl: required("DATABASE_URL", env.DATABASE_URL),
     lldapUrl: required("LLDAP_URL", env.LLDAP_URL),
     lldapAdminDn: required("LLDAP_ADMIN_DN", env.LLDAP_ADMIN_DN),

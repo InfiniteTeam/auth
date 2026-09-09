@@ -22,7 +22,7 @@ import {
   LldapAuthenticationError,
   LldapService,
 } from "../lldap/lldap.service.js";
-import { SessionService, SESSION_COOKIE } from "../session/session.service.js";
+import { SessionService } from "../session/session.service.js";
 
 @ApiTags("auth")
 @Controller("api/v1/auth")
@@ -56,7 +56,11 @@ export class AuthController {
         roles: user.roles,
         permissions: user.permissions,
       });
-      res.cookie(SESSION_COOKIE_NAME, cookieValue, SESSION_COOKIE);
+      res.cookie(
+        SESSION_COOKIE_NAME,
+        cookieValue,
+        this.sessionService.cookieOptions,
+      );
       return session;
     } catch (error) {
       if (error instanceof LldapAuthenticationError) {

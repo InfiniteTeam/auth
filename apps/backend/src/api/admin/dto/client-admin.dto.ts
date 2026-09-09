@@ -108,7 +108,11 @@ export class OidcClientDto {
  * Response body of `POST /api/v1/admin/clients`.
  */
 export class CreateOidcClientResponseDto extends OidcClientDto {
-  /** The client secret. Shown exactly once; never stored in plain form later. */
+  /**
+   * The client secret. Returned exactly once; subsequent reads of the client
+   * do not re-expose it (the value is stored in plain text for the token
+   * endpoint comparison).
+   */
   clientSecret: string;
 }
 

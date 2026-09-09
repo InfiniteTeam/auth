@@ -19,7 +19,7 @@ import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Request, Response } from "express";
 import { SESSION_COOKIE_NAME } from "@inft/shared";
 import type { Session } from "@inft/shared";
-import { SessionService, SESSION_COOKIE } from "../session/session.service.js";
+import { SessionService } from "../session/session.service.js";
 
 @ApiTags("session")
 @Controller("api/v1/session")
@@ -62,6 +62,6 @@ export class SessionController {
       SESSION_COOKIE_NAME
     ];
     await this.sessionService.revokeSession(raw);
-    res.clearCookie(SESSION_COOKIE_NAME, SESSION_COOKIE);
+    res.clearCookie(SESSION_COOKIE_NAME, this.sessionService.cookieOptions);
   }
 }

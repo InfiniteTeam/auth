@@ -14,10 +14,9 @@ import { SESSION_COOKIE_NAME } from "@inft/shared";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
 
-/** HTTP-only, secure, lax session cookie configuration. */
+/** HTTP-only session cookie options. `secure` is set per environment. */
 export const SESSION_COOKIE = {
   httpOnly: true,
-  secure: true,
   sameSite: "lax" as const,
   path: "/",
   maxAge: 60 * 60 * 24 * 7, // 7 days, matches SESSION_COOKIE_OPTIONS in @inft/shared
@@ -49,6 +48,18 @@ export class SessionService {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Cookie attributes for the `inft_session` cookie. The `Secure` flag is only
+   * applied in `production` so local development over plain `http://localhost`
+   * keeps working; production always runs behind TLS.
+   */
+  get cookieOptions(): Readonly<typeof SESSION_COOKIE> & { secure: boolean } {
+    return {
+      ...SESSION_COOKIE,
+      secure: this.config.nodeEnv === "production",
+    };
+  }
 
   /**
    * Computes the HMAC signature of a session id.

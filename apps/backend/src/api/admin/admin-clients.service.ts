@@ -2,9 +2,11 @@
  * Admin OIDC client management service.
  *
  * Issues, lists and revokes OIDC clients in the `auth` database. New clients
- * get a Snowflake `client_id` and a randomly generated `client_secret` that is
- * returned once in plain text; only the metadata record (with the hashed
- * secret) persists, mirroring the oidc-provider client adapter storage.
+ * get a Snowflake `client_id` and a randomly generated `client_secret`. The
+ * secret is returned exactly once in plain text and is otherwise stored in
+ * plain text (oidc-provider compares it verbatim on the token endpoint), so
+ * treat the issued value as a credential: rotate clients when compromised and
+ * do not rely on the stored value for secret disclosure.
  */
 
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";

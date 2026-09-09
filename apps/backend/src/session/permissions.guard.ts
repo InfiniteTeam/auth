@@ -48,10 +48,16 @@ export class PermissionsGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    const required = Reflect.getMetadata(
+    const handlerPermissions = Reflect.getMetadata(
       PERMISSIONS_KEY,
       context.getHandler(),
-    ) as PermissionResolvable[] | undefined;
+    );
+    const controllerClass = context.getClass();
+    const classPermissions = controllerClass
+      ? Reflect.getMetadata(PERMISSIONS_KEY, controllerClass)
+      : undefined;
+    const required = (handlerPermissions ??
+      classPermissions) as PermissionResolvable[] | undefined;
     if (!required || required.length === 0) {
       return true;
     }
