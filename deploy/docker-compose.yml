@@ -1,0 +1,147 @@
+name: inft-auth
+
+services:
+  # ------------------------------------------------------------
+  # PostgreSQL — single DB server (auth + lldap schemas)
+  # ------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      AUTH_DB_USER: ${AUTH_DB_USER:-auth}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD}
+      AUTH_DB_NAME: ${AUTH_DB_NAME:-auth}
+      LLDAP_DB_USER: ${LLDAP_DB_USER:-lldap}
+      LLDAP_DB_PASSWORD: ${LLDAP_DB_PASSWORD}
+      LLDAP_DB_NAME: ${LLDAP_DB_NAME:-lldap}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - inft
+    # passwords are passed at build time to the init script
+    command: ["postgres"]
+
+  # ------------------------------------------------------------
+  # lldap — Lightweight LDAP server (user identity management)
+  # ------------------------------------------------------------
+  lldap:
+    image: lldap/lldap:latest
+    restart: unless-stopped
+    environment:
+      LLDAP_LOG_LEVEL: info
+      LLDAP_DATABASE_URL: postgres://${LLDAP_DB_USER:-lldap}:${LLDAP_DB_PASSWORD}@postgres:5432/${LLDAP_DB_NAME:-lldap}
+      LLDAP_SERVER_URL: "ldap://0.0.0.0:3890"
+      LLDAP_HTTP_URL: "http://0.0.0.0:17170"
+      LLDAP_HTTP_PORT: "17170"
+      LLDAP_LDAP_PORT: "3890"
+      # LDAP base DN (dc=<LLDAP_BASE_DC>,dc=<LLDAP_BASE_DOMAIN>)
+      LLDAP_LDAP_BASE_DN: "dc=${LLDAP_BASE_DC:-inft},dc=${LLDAP_BASE_DOMAIN:-kr}"
+      # lldap admin account (used for initial admin bootstrap and GraphQL login)
+      LLDAP_LDAP_USER_DN: ${LLDAP_ADMIN_USERNAME:-admin}
+      LLDAP_LDAP_USER_PASS: ${LLDAP_ADMIN_PASSWORD}
+      # Admin email — set at bootstrap only; backend login uses this email.
+      LLDAP_LDAP_USER_EMAIL: ${LLDAP_ADMIN_EMAIL}
+      LLDAP_JWT_SECRET: ${LLDAP_JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/app/lldap", "healthcheck", "--config-file", "/data/lldap_config.toml"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - inft
+    # lldap persists config & state in /data (SQLite config + key/state)
+    volumes:
+      - lldap_data:/data
+
+  # ------------------------------------------------------------
+  # backend — Nest.js OIDC / OAuth2 / LDAP / WebFinger / API
+  # ------------------------------------------------------------
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      ISSUER_URL: https://${AUTH_DOMAIN}
+      OIDC_JWKS_PATH: /app/data/jwks.json
+      SESSION_SECRET: ${SESSION_SECRET}
+      TAILSCALE_CLIENT_SECRET: ${TAILSCALE_CLIENT_SECRET}
+      DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD}@postgres:5432/${AUTH_DB_NAME:-auth}
+      LLDAP_URL: http://lldap:17170
+      LLDAP_ADMIN_DN: "${LLDAP_ADMIN_USERNAME:-admin}"
+      LLDAP_ADMIN_PASSWORD: ${LLDAP_ADMIN_PASSWORD}
+      ADMIN_GROUP_NAME: ${ADMIN_GROUP_NAME:-admins}
+      SNOWFLAKE_WORKER_ID: ${SNOWFLAKE_WORKER_ID:-0}
+    volumes:
+      - backend_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      lldap:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/.well-known/openid-configuration"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - inft
+
+  # ------------------------------------------------------------
+  # www — Next.js frontend portal
+  # ------------------------------------------------------------
+  www:
+    build:
+      context: ..
+      dockerfile: deploy/www/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOSTNAME: "0.0.0.0"
+      # Same-origin: cloudflared routes /api/* to backend, so
+      # NEXT_PUBLIC_BACKEND_URL is left blank (see apps/www/lib/auth.ts).
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - inft
+
+  # ------------------------------------------------------------
+  # cloudflared — Cloudflare Tunnel (optional)
+  # ------------------------------------------------------------
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    container_name: cloudflared-inft-auth
+    depends_on:
+      - backend
+      - www
+    command: tunnel --no-autoupdate run --token=${TUNNEL_TOKEN}
+    networks:
+      - inft
+
+networks:
+  inft:
+    name: inft-auth-net
+
+volumes:
+  postgres_data:
+    name: inft-auth-postgres-data
+  lldap_data:
+  lldap_config:
+  backend_data:
