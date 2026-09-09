@@ -114,8 +114,8 @@ main() {
   # ---------------- Cloudflare Tunnel ----------------
   echo
   info "6. Cloudflare Tunnel (optional)"
-  echo "    This runs cloudflared in remote-managed mode; routing is set up"
-  echo "    in the Cloudflare dashboard (Networking > Tunnels > <tunnel>)."
+  echo "    cloudflared runs in locally-managed mode: routing is defined in"
+  echo "    deploy/cloudflared/config.yml (generated from config.yml.example)."
   echo
   echo "    Get the token from the tunnel's Overview tab via 'Add a replica'"
   echo "    (copy the eyJ... value), or from the Cloudflare API:"
@@ -174,6 +174,29 @@ TUNNEL_TOKEN=${TUNNEL_TOKEN}
 TUNNEL_ID=${TUNNEL_ID}
 EOF
   ok ".env written: $ENV_FILE"
+
+  # ---------------- Cloudflare tunnel artifacts (optional) ----------------
+  if [[ "$WITH_TUNNEL" =~ ^[Yy]$ ]] && [ -n "$TUNNEL_TOKEN" ] && [ -n "$TUNNEL_ID" ]; then
+    info "Generating cloudflared credentials and config..."
+
+    # credentials.json: the tunnel token is base64 JSON {a,t,s}.
+    if ! command -v python3 >/dev/null 2>&1; then
+      warn "python3 not found — skipping credentials.json generation."
+      warn "Generate it manually from TUNNEL_TOKEN: see README."
+    else
+      python3 -c 'import base64,json;t="'"$TUNNEL_TOKEN"'";p="="*(-len(t)%4);d=json.loads(base64.urlsafe_b64decode(t+p));print(json.dumps({"AccountTag":d["a"],"TunnelSecret":d["s"],"TunnelID":d["t"]},indent=2))' \
+        > "$SCRIPT_DIR/cloudflared/credentials.json"
+      ok "cloudflared/credentials.json written (gitignored)"
+    fi
+
+    # config.yml from config.yml.example
+    sed -e "s|__TUNNEL_ID__|${TUNNEL_ID}|g" \
+        -e "s|__AUTH_DOMAIN__|${AUTH_DOMAIN}|g" \
+        -e "s|__ROOT_DOMAIN__|${ROOT_DOMAIN}|g" \
+        "$SCRIPT_DIR/cloudflared/config.yml.example" \
+        > "$SCRIPT_DIR/cloudflared/config.yml"
+    ok "cloudflared/config.yml written (gitignored)"
+  fi
 
   # ---------------- docker compose ----------------
   echo

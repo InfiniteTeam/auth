@@ -122,7 +122,7 @@ services:
       - inft
 
   # ------------------------------------------------------------
-  # cloudflared — Cloudflare Tunnel (optional)
+  # cloudflared — Cloudflare Tunnel (locally-managed ingress)
   # ------------------------------------------------------------
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -131,7 +131,10 @@ services:
     depends_on:
       - backend
       - www
-    command: tunnel --no-autoupdate run --token=${TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - ./cloudflared/credentials.json:/etc/cloudflared/credentials.json:ro
     networks:
       - inft
 

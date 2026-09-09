@@ -68,9 +68,11 @@ example.com
 └── /.well-known/webfinger             → backend :3000
 ```
 
-When using `cloudflared`, tunnel routing is configured in the Cloudflare
-dashboard (remote-managed mode) — `cloudflared/config.yml` is a local-management
-reference only and is not used by this stack.
+When using `cloudflared`, the ingress map is defined locally in
+`cloudflared/config.yml` (locally-managed mode). The tunnel token
+(`TUNNEL_TOKEN`) is not needed at runtime — cloudflared reads the tunnel
+credentials from `cloudflared/credentials.json`, which is derived from the
+token at setup time.
 
 ## Cloudflare Tunnel setup (optional)
 
@@ -93,17 +95,32 @@ The token (`eyJ...`) can be obtained one of these ways:
 - **Creation response** — the API response of the Create tunnel call
   includes both `id` and `token`.
 
-### 3. Configure routing (dashboard)
+### 3. Configure routing
 
-On the tunnel's **Public Hostname** tab, add:
+Routing is defined in `cloudflared/config.yml.example` (template, tracked in
+git). `setup.sh` generates the runtime `cloudflared/config.yml` from it by
+replacing `__TUNNEL_ID__`, `__AUTH_DOMAIN__` and `__ROOT_DOMAIN__` (both
+`config.yml` and `credentials.json` are gitignored). Order matters —
+cloudflared uses the first matching rule:
 
+```yaml
+ingress:
+  - hostname: auth.example.com
+    path: /oauth2*
+    service: http://backend:3000
+  - hostname: auth.example.com
+    path: /.well-known*
+    service: http://backend:3000
+  - hostname: auth.example.com
+    path: /api*
+    service: http://backend:3000
+  - hostname: example.com
+    path: /.well-known/webfinger
+    service: http://backend:3000
+  - hostname: auth.example.com
+    service: http://www:3001
+  - service: http_status:404
 ```
-auth.example.com  service: http://backend:3000
-example.com       service: http://backend:3000
-```
-
-Both domains route to the backend (it serves the OIDC discovery, API,
-WebFinger and the frontend proxy).
 
 ### 4. Configure DNS (dashboard)
 
@@ -114,11 +131,35 @@ auth.example.com  CNAME  <tunnel-id>.cfargotunnel.com
 example.com       CNAME  <tunnel-id>.cfargotunnel.com
 ```
 
-### 5. Put the values in `deploy/.env`
+### 5. Generate credentials & config
 
-```ini
-TUNNEL_TOKEN=<eyJ... token>
-TUNNEL_ID=<uuid>
+`setup.sh` derives both runtime files from `.env` values:
+
+- `cloudflared/credentials.json` — decoded from `TUNNEL_TOKEN`. The token is
+  `.`-less base64 JSON: `{"a":<account tag>,"t":<tunnel id>,"s":<secret>}`.
+- `cloudflared/config.yml` — rendered from `config.yml.example`.
+
+To regenerate just these files from an existing `.env` without re-running the
+whole setup, run:
+
+```bash
+cd deploy
+python3 - <<'EOF'
+import base64, json, os, re
+env = {}
+for line in open('.env'):
+    m = re.match(r'^(\w+)=(.*)$', line.strip())
+    if m: env[m.group(1)] = m.group(2).strip().strip('"').strip("'")
+data = json.loads(base64.urlsafe_b64decode(env['TUNNEL_TOKEN']))
+open('cloudflared/credentials.json', 'w').write(json.dumps({
+    "AccountTag": data["a"], "TunnelSecret": data["s"], "TunnelID": data["t"],
+}, indent=2))
+conf = open('cloudflared/config.yml.example').read()
+for k, v in {'__TUNNEL_ID__': data["t"], '__AUTH_DOMAIN__': env['AUTH_DOMAIN'],
+             '__ROOT_DOMAIN__': env['ROOT_DOMAIN']}.items():
+    conf = conf.replace(k, v)
+open('cloudflared/config.yml', 'w').write(conf)
+EOF
 ```
 
 Then start the tunnel with `docker compose up -d cloudflared`, or restart

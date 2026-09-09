@@ -34,3 +34,8 @@ pnpm-debug.log*
 .DS_Store
 .idea/
 .vscode/
+# cloudflared credentials (deploy-local, derived from TUNNEL_TOKEN)
+deploy/cloudflared/credentials.json
+
+# cloudflared runtime config (generated from config.yml.example by setup.sh)
+deploy/cloudflared/config.yml
