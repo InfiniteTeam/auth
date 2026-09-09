@@ -98,7 +98,7 @@ export class AuthApiClient implements AuthClient {
   /** @inheritDoc */
   async session(): Promise<Session | null> {
     try {
-      return await this.request<Session>("/api/session");
+      return await this.request<Session>("/api/v1/session");
     } catch (err) {
       if (err instanceof AuthApiError && err.statusCode === 401) {
         return null;
@@ -109,7 +109,7 @@ export class AuthApiClient implements AuthClient {
 
   /** @inheritDoc */
   async loginLdap(input: LdapLoginInput): Promise<Session> {
-    return this.request<Session>("/api/auth/ldap", {
+    return this.request<Session>("/api/v1/auth/ldap", {
       method: "POST",
       body: JSON.stringify(input),
     });
@@ -118,7 +118,7 @@ export class AuthApiClient implements AuthClient {
   /** @inheritDoc */
   async loginSocial(provider: "github" | "discord"): Promise<void> {
     const doFetch = this.options.fetch ?? fetch;
-    const res = await doFetch(`${this.baseUrl}/api/auth/social/${provider}`, {
+    const res = await doFetch(`${this.baseUrl}/api/v1/auth/social/${provider}`, {
       credentials: "include",
       redirect: "manual",
     });
@@ -146,7 +146,7 @@ export class AuthApiClient implements AuthClient {
 
   /** @inheritDoc */
   async logout(): Promise<void> {
-    await this.request<void>("/api/session", { method: "DELETE" });
+    await this.request<void>("/api/v1/session", { method: "DELETE" });
   }
 }
 
