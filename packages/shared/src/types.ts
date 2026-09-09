@@ -27,6 +27,12 @@ export interface User {
   avatarUrl?: string;
   /** Roles assigned to the user. */
   roles: Role[];
+  /**
+   * Permission bitfield as a decimal string (e.g. `"7"`).
+   * See {@link PermissionBitField} for the flag layout.
+   * Absent when the user was resolved outside a session context.
+   */
+  permissions?: string;
   /** ISO 8601 creation timestamp. */
   createdAt: string;
   /** ISO 8601 last-updated timestamp. */
@@ -52,6 +58,11 @@ export interface SessionUser {
   name: string;
   /** Roles assigned to the user. */
   roles: Role[];
+  /**
+   * Permission bitfield as a decimal string (e.g. `"7"`).
+   * See {@link PermissionBitField} for the flag layout.
+   */
+  permissions?: string;
 }
 
 /**
