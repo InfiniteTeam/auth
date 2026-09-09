@@ -131,15 +131,14 @@ export class BitField<Flags extends string, Type extends bigint> {
     return (toBigInt(this.bits) & toBigInt(resolved)) !== 0n;
   }
 
-  /** Returns the flag names supplied that are missing from this instance. */
+  /**
+   * Returns the flag names supplied that are missing from this instance.
+   */
   public missing(bits: readonly Flags[] | BitFieldResolvable<Flags, Type>): Flags[] {
-    if (!Array.isArray(bits)) {
-      const resolved = new (this.constructor as new (
-        value?: BitFieldResolvable<Flags, Type>,
-      ) => BitField<Flags, Type>)(bits);
-      return resolved.toArray();
-    }
-    return bits.filter((bit) => !this.has(bit)) as Flags[];
+    const resolved = new (this.constructor as new (
+      value?: BitFieldResolvable<Flags, Type>,
+    ) => BitField<Flags, Type>)(bits).remove(this.bits);
+    return resolved.toArray();
   }
 
   /** Adds the supplied bits to this instance. */
