@@ -98,8 +98,10 @@ const escapeDescription = (text) =>
   escapeMdx(text).replace(/["]/g, '&quot;').replace(/[\r\n]+/g, ' ');
 
 async function copyGuides() {
-  const dest = path.join(contentRoot, 'guides');
-  await rm(dest, { recursive: true, force: true });
+  // Nested under `guides/` so every guide lives at `/docs/guides/...`,
+  // matching the `api/` group in the sidebar tree.
+  const dest = path.join(contentRoot, 'guides', 'guides');
+  await rm(path.join(contentRoot, 'guides'), { recursive: true, force: true });
   await mkdir(dest, { recursive: true });
 
   const entries = await readdir(guidesSrc);
@@ -113,7 +115,7 @@ async function copyGuides() {
   }
 
   await writeFile(
-    path.join(dest, 'meta.json'),
+    path.join(contentRoot, 'guides', 'meta.json'),
     JSON.stringify({ title: 'Guides', pages: ['README', 'deployment', 'development', 'oidc', 'security'] }, null, 2),
     'utf8',
   );
