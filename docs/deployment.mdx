@@ -1,0 +1,169 @@
+---
+title: Deployment
+description: Self-hosted deployment via Docker Compose, domain routing and Cloudflare Tunnel
+icon: Server
+---
+
+# Deployment
+
+The platform is shipped as a self-hostable **Docker Compose** package in
+[`deploy/`](../deploy/). It provisions PostgreSQL, lldap, the Nest.js backend,
+the Next.js frontend and an optional Cloudflare Tunnel.
+
+See [deploy/README.md](../deploy/README.md) for the complete manual.
+
+## Services
+
+| Service | Image | Role |
+|---------|-------|------|
+| `postgres` | postgres:17-alpine | Single database (auth + lldap schemas) |
+| `lldap` | lldap/lldap | User identity management (LDAP) |
+| `backend` | local build | Nest.js OIDC/OAuth2 server, API, WebFinger |
+| `www` | local build | Next.js frontend portal |
+| `cloudflared` | cloudflare/cloudflared | Cloudflare Tunnel (optional, `tunnel` profile) |
+
+## Requirements
+
+- **Docker Engine** 24+ and **Docker Compose** v2
+- Two domains: `auth.example.com` (OIDC issuer, frontend, API) and
+  `example.com` (WebFinger)
+
+## Quick start (interactive setup)
+
+```bash
+cd deploy
+./setup.sh
+docker compose logs -f
+```
+
+Follow the prompts for domain, admin password and Cloudflare Tunnel. The script
+generates a `.env` file and the tunnel assets.
+
+```bash
+docker compose up -d --build                    # without the tunnel
+docker compose --profile tunnel up -d --build   # include cloudflared
+```
+
+`cloudflared` runs under the `tunnel` Compose profile so a fresh install
+starts cleanly even before the tunnel files have been generated.
+
+## Manual install
+
+```bash
+cd deploy
+cp .env.example .env
+# Fill in the .env values, especially passwords and secrets
+docker compose up -d --build
+```
+
+## Environment variables
+
+Managed in `deploy/.env`. See [.env.example](../deploy/.env.example) for details.
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `AUTH_DOMAIN` | Auth server domain (OIDC issuer) | `auth.example.com` |
+| `ROOT_DOMAIN` | WebFinger domain | `example.com` |
+| `POSTGRES_PASSWORD` | PostgreSQL superuser password | - |
+| `AUTH_DB_PASSWORD` | auth DB password | - |
+| `LLDAP_DB_PASSWORD` | lldap DB password | - |
+| `LLDAP_ADMIN_PASSWORD` | lldap admin password | - |
+| `LLDAP_ADMIN_EMAIL` | lldap admin email (resolves users by email) | `admin@example.com` |
+| `SESSION_SECRET` | Session/cookie signing secret | - |
+| `TAILSCALE_CLIENT_SECRET` | Tailscale OIDC client secret | - |
+| `TUNNEL_TOKEN` | Cloudflare Tunnel token (optional) | - |
+
+## Domain routing
+
+```
+auth.example.com
+├── /oauth2/*, /.well-known/*, /api/*  → backend :3000
+├── /*                                 → www     :3001
+example.com
+└── /.well-known/webfinger             → backend :3000
+```
+
+When using `cloudflared`, the ingress map is defined locally in
+`cloudflared/config.yml` (locally-managed mode). The tunnel token is only
+needed at setup time to derive `cloudflared/credentials.json`.
+
+## Cloudflare Tunnel setup (optional)
+
+1. Create a tunnel in the [Cloudflare dashboard](https://dash.cloudflare.com/)
+   (**Networking → Tunnels**) and note the tunnel **ID**.
+2. Obtain the tunnel token (`eyJ...`) from the dashboard or the API.
+3. `setup.sh` generates `cloudflared/config.yml` and
+   `cloudflared/credentials.json` from your `.env` values.
+4. Create two proxied CNAME records pointing at the tunnel:
+
+   ```
+   auth.example.com  CNAME  <tunnel-id>.cfargotunnel.com
+   example.com       CNAME  <tunnel-id>.cfargotunnel.com
+   ```
+
+## Operations
+
+### Logs / status
+
+```bash
+docker compose ps            # status
+docker compose logs -f       # all logs
+docker compose logs -f backend
+```
+
+### Update
+
+```bash
+git pull
+docker compose build
+docker compose up -d
+```
+
+### Backup
+
+Back up the `postgres_data` volume.
+
+```bash
+docker run --rm -v inft-auth-postgres-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/postgres-$(date +%F).tar.gz -C /data .
+```
+
+### Reset (full reinstall)
+
+```bash
+docker compose down -v        # remove everything, including volumes
+./setup.sh                    # re-run setup
+```
+
+## Documentation hosting
+
+The **apps/docs** static site (Fumadocs) is published from a GitHub Actions
+workflow (`.github/workflows/docs.yml`) that runs on every push to `develop`:
+
+1. `pnpm run docs` generates the package API artifacts (`docs.api.json`).
+2. `apps/docs` is built as a static export into `apps/docs/out/`.
+3. The output is pushed to the `gh-pages` branch (artifact storage).
+4. The same output is deployed to **Cloudflare Pages**.
+
+Cloudflare Pages requires two repository secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Wrangler API token with Pages edit permission |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID for the Pages project |
+
+The Pages project name is `inft-auth-docs`. Create it once with:
+
+```bash
+npx wrangler pages project create inft-auth-docs
+```
+
+## Troubleshooting
+
+- **backend health check failing**: run `docker compose logs backend`. Possibly
+  a Prisma migration failure — verify postgres is healthy.
+- **lldap login failing**: the initial admin password is `LLDAP_ADMIN_PASSWORD`.
+  The admin account must have an email (`LLDAP_ADMIN_EMAIL`); the backend
+  resolves users by email.
+- **Domain not reachable**: without cloudflared the stack is only reachable on
+  `localhost`.

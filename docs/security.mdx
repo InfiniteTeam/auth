@@ -1,0 +1,75 @@
+---
+title: Security
+description: Session cookies, social login policy, permissions and secret management
+icon: ShieldCheck
+---
+
+# Security
+
+This page collects the security architecture and operational policies of the
+platform.
+
+## Session cookie
+
+The backend issues a signed session cookie:
+
+| Property | Value |
+|----------|-------|
+| Name | `inft_session` |
+| `HttpOnly` | yes |
+| `Secure` | yes |
+| `SameSite` | `Lax` |
+| `Path` | `/` |
+| `Max-Age` | 7 days |
+
+The cookie value is signed with `SESSION_SECRET`. Keep the secret long and
+random, and rotate it only when you can invalidate existing sessions.
+
+See `SESSION_COOKIE_OPTIONS` in [`packages/shared`](../packages/shared) for the
+single source of truth.
+
+## Social login policy
+
+**A matching email from a social provider is never auto-merged into an
+existing LDAP account.**
+
+- Social login can only connect to an existing account **while already signed
+  in**.
+- Otherwise it creates a new local account.
+
+This prevents account takeover caused by an email address that is verified by
+a social provider but not owned by the LDAP user.
+
+## Identities and permissions
+
+- Exactly one identity database (PostgreSQL) with two schemas:
+  - `auth` — managed by the backend via Prisma (OAuth clients, sessions,
+    metadata).
+  - `lldap` — managed by lldap itself. The backend never writes identities
+    directly; it authenticates through the LDAP protocol / lldap API.
+- Permissions are a **bigint bitfield** (`PermissionBitField`) derived from
+  lldap group membership. Each capability occupies one bit (`OidcClientRead`,
+  `OidcClientCreate`, `OidcClientDelete`).
+
+## Secrets
+
+| Secret | Where | Used for |
+|--------|-------|----------|
+| `SESSION_SECRET` | `deploy/.env` | Session/cookie signing |
+| `POSTGRES_PASSWORD` | `deploy/.env` | PostgreSQL superuser |
+| `AUTH_DB_PASSWORD` | `deploy/.env` | auth DB user |
+| `LLDAP_DB_PASSWORD` | `deploy/.env` | lldap DB user |
+| `LLDAP_ADMIN_PASSWORD` | `deploy/.env` | lldap admin |
+| `TAILSCALE_CLIENT_SECRET` | `deploy/.env` | Tailscale OIDC client |
+
+Operational rules:
+
+- `.env` files are gitignored — never commit real secrets.
+- Database credentials are redacted from compose logs.
+- Rotate `SESSION_SECRET` and client secrets on a schedule or after a breach.
+
+## Reporting
+
+Report security issues privately via the
+[security advisory](https://github.com/InfiniteTeam/auth/security) page instead
+of the public issue tracker.

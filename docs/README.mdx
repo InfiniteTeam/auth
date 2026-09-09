@@ -1,0 +1,71 @@
+---
+title: Welcome
+description: Self-hosted authentication platform for the InfiniteTeam ecosystem
+icon: House
+---
+
+# inft-auth
+
+Self-hosted authentication platform for the InfiniteTeam ecosystem: **OAuth 2.0 /
+OpenID Connect**, **LDAP identity**, **WebFinger** and **social login**
+(GitHub, Discord). The first consuming service is **Tailscale** (custom OIDC
+client).
+
+<Cards>
+  <Card title="Deployment" href="/docs/deployment" icon="Server" />
+  <Card title="Security" href="/docs/security" icon="ShieldCheck" />
+  <Card title="OIDC & Integrations" href="/docs/oidc" icon="KeyRound" />
+  <Card title="Development" href="/docs/development" icon="Code2" />
+  <Card title="API Reference" href="/docs/api" icon="BookOpenCheck" />
+</Cards>
+
+## Platform
+
+- **OIDC / OAuth 2.0** provider built on [oidc-provider](https://github.com/panva/node-oidc-provider)
+  with a Nest.js backend (`apps/backend`).
+- **LDAP identity** managed by [lldap](https://github.com/lldap/lldap)
+  (PostgreSQL-backed, single source of truth).
+- **Social login** via GitHub and Discord, with a strict **no-auto-merge**
+  policy for matching emails.
+- **WebFinger** (`inft.kr/.well-known/webfinger`) for Tailscale custom OIDC.
+- **Session API** with an `inft_session` cookie (`HttpOnly; Secure; SameSite=Lax`).
+- **Next.js frontend** (`apps/www`) — login, consent, signup and settings UI.
+
+## Repository layout
+
+```
+apps/
+  backend/   # Nest.js + oidc-provider — OIDC/OAuth2 server, session API
+  www/       # Next.js — frontend UI only (login, consent, management)
+  docs/      # Fumadocs static documentation site (this site)
+packages/
+  shared/    # @inftkr/shared      — shared constants & domain types
+  auth-core/ # @inftkr/auth-core   — shared auth core: types, client, guards, react hooks
+  auth-sdk/  # @inftkr/auth-sdk    — OIDC SDK for external consumer services
+  scripts/   # @inftkr/scripts     — internal tooling (private, docs generation)
+deploy/      # Docker Compose (backend, www, lldap, PostgreSQL, reverse proxy)
+```
+
+See [AGENTS.md](../AGENTS.md) for the full development guide (architecture
+decisions, non-negotiables, documentation pipeline).
+
+## Domains
+
+| Domain | Purpose |
+|--------|---------|
+| `auth.inft.kr` | OIDC issuer, frontend UI, internal API |
+| `inft.kr` | WebFinger (`/.well-known/webfinger`) |
+
+## Getting started
+
+Node.js >= 22 and pnpm 12 (corepack) are required.
+
+```bash
+pnpm install   # install workspace deps
+pnpm dev       # turbo run dev (watch mode)
+pnpm build     # turbo run build
+pnpm typecheck # turbo run typecheck
+pnpm lint      # turbo run lint
+pnpm test      # turbo run test
+pnpm run docs  # turbo run docs (API docs generation)
+```

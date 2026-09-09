@@ -34,6 +34,7 @@ The first consuming service is **Tailscale** (custom OIDC client).
 apps/
   backend/   # Nest.js + oidc-provider — OIDC/OAuth2 server, session API
   www/       # Next.js — frontend UI only (login, consent, management)
+  docs/      # Fumadocs — static documentation site (guides + API reference)
 packages/
   shared/    # @inftkr/shared   — shared constants & domain types
   auth-core/ # @inftkr/auth-core — shared auth core: types, client, guards, react hooks
@@ -61,12 +62,24 @@ pnpm run docs  # turbo run docs (API docs generation)
 
 ## Documentation
 
+Operation guides live in the `docs/` directory as MDX sources and are published
+as a static site (`apps/docs`, Fumadocs) covering host `auth.inft.kr` / `inft.kr`,
+deployment, security model, OIDC integration and per-package API references.
+
 Each package generates per-member API documentation in Markdown into its
 `docs/` directory via a TypeDoc-free pipeline:
 
 1. `build:docs` — emit declarations to `dist-docs/`
 2. `api-extractor run --local` — produce `api-report.api.md` + `docs.api.json`
 3. `generate-split-documentation` — split the doc model into per-member files
+
+The docs site build (`apps/docs`) consumes `docs.api.json` to render the API
+reference automatically; run it with:
+
+```bash
+pnpm run docs                        # regenerate package API artifacts
+pnpm --filter @inftkr/docs build     # static export into apps/docs/out/
+```
 
 ## Related
 

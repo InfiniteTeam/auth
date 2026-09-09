@@ -1,0 +1,119 @@
+---
+title: Development
+description: Local development environment, tooling and the documentation pipeline
+icon: Code2
+---
+
+# Development
+
+This project is a **pnpm** workspace managed with **Turborepo**. Node.js >= 22
+(currently v22.23.2) and pnpm 12.3.4 (corepack) are required.
+
+## Commands
+
+```bash
+pnpm install          # install workspace deps
+pnpm dev              # turbo run dev (watch mode)
+pnpm build            # turbo run build (tsup for packages)
+pnpm typecheck        # turbo run typecheck (tsc --noEmit)
+pnpm lint             # turbo run lint
+pnpm test             # turbo run test
+pnpm run docs         # turbo run docs (API docs generation)
+pnpm format           # prettier --write .
+```
+
+## Workspace layout
+
+```
+apps/
+  backend/   # Nest.js + oidc-provider — OIDC/OAuth2 server, session API
+  www/       # Next.js — frontend UI only
+  docs/      # This site (Fumadocs static export)
+packages/
+  shared/    # @inftkr/shared — shared constants & domain types
+  auth-core/ # @inftkr/auth-core — types, client, guards, react hooks
+  auth-sdk/  # @inftkr/auth-sdk — OIDC SDK for consumer services
+  scripts/   # @inftkr/scripts — internal tooling, docs generation
+```
+
+## Architecture decisions (fixed)
+
+- **Single domain**: `auth.inft.kr` hosts the OIDC issuer, the frontend UI and
+  the internal API. WebFinger lives on the root domain (`inft.kr`).
+- **Identity storage**: lldap (LDAP) backed by PostgreSQL. Exactly one identity
+  database: `auth` schema (Prisma) + `lldap` schema (lldap-owned).
+- Nest.js is backend-only; Next.js (`apps/www`) is frontend-only (portal).
+- Social login never auto-merges emails into existing LDAP accounts.
+
+## Backend
+
+```bash
+pnpm --filter @inftkr/backend dev     # nest start --watch
+pnpm --filter @inftkr/backend test    # vitest run
+```
+
+Configuration lives in `.env` (see `.env.example`): `DATABASE_URL`,
+`LLDAP_URL`, `LLDAP_ADMIN_DN`, `LLDAP_ADMIN_PASSWORD`, `ADMIN_GROUP_NAME`,
+`ISSUER_URL`, `SESSION_SECRET`, `TAILSCALE_CLIENT_SECRET`.
+
+### Module map
+
+| Path | Responsibility |
+|------|----------------|
+| `src/api/auth.controller.ts` | LDAP sign-in, social sign-in |
+| `src/api/session.controller.ts` | Session read/delete |
+| `src/api/admin/` | OIDC client management (admin-guarded) |
+| `src/oidc/` | oidc-provider integration, JWKS, Prisma adapter |
+| `src/session/` | Session guard, permissions guard, cookie signing |
+| `src/lldap/` | LDAP bind authentication + GraphQL queries |
+| `src/webfinger/` | WebFinger endpoint |
+
+## Frontend (www)
+
+```bash
+pnpm --filter @inftkr/www dev     # next dev
+pnpm --filter @inftkr/www build
+```
+
+Pages: `/` (home), `/login`, `/logout`, `/signup`, `/consent`, `/settings`.
+It uses `@inftkr/auth-core` React hooks (`useSession`, `useSignIn`,
+`useSignOut`) and `shadcn/ui`.
+
+## Documentation pipeline
+
+Every workspace package generates per-member API docs in Markdown via a
+TypeDoc-free pipeline:
+
+1. `build:docs` — emit declarations to `dist-docs/`
+2. `api-extractor run --local` — produce `api-report.md` + `docs.api.json`
+3. `generate-split-documentation` — split the doc model into per-member files
+
+The static documentation site (`apps/docs`) consumes both the root `docs/*.mdx`
+guides and the package `docs.api.json` models.
+
+## Documentation site (docs)
+
+```bash
+pnpm --filter @inftkr/docs dev       # next dev
+pnpm --filter @inftkr/docs build     # static export → apps/docs/out
+```
+
+- Content roots: `docs/*.mdx` (guides) and generated `content/api/` (API
+  Reference from `docs.api.json`).
+- The app performs a **static export** (`output: 'export'`), suitable for any
+  static host.
+
+## Releasing packages
+
+`@inftkr/auth-sdk` is the only publishable package so far (MIT, public, npm
+`@inftkr/auth-sdk`). `prepublishOnly` builds and re-generates docs.
+
+```bash
+pnpm --filter @inftkr/auth-sdk prepublishOnly
+pnpm --filter @inftkr/auth-sdk publish --dry-run
+```
+
+## Branch workflow
+
+Development happens on `develop`, created from `origin/stable`. Commit
+messages follow the repo's convention (concise, imperative).
