@@ -1,4 +1,4 @@
-import { Fingerprint, LockKeyhole, ShieldCheck, Server, BookOpenCheck, Code2 } from 'lucide-react';
+import { Fingerprint, LockKeyhole, ShieldCheck, BookOpenCheck, Code2 } from 'lucide-react';
 import { FeatureCards } from '@/components/feature-cards';
 
 const features = [
@@ -64,13 +64,6 @@ export default function HomePage() {
         >
           <Code2 className="size-4" />
           View on GitHub
-        </a>
-        <a
-          href="https://login.tailscale.com"
-          className="inline-flex items-center gap-2 rounded-lg border border-[--fd-border] px-5 py-2.5 text-sm font-semibold text-fd-foreground transition hover:bg-fd-secondary"
-        >
-          <Server className="size-4" />
-          Tailscale console
         </a>
       </div>
     </div>
