@@ -1,0 +1,16 @@
+# deps
+/node_modules
+
+# generated content (produced by scripts/prepare-content.mjs)
+/content
+
+# test & build
+/.next/
+/out/
+/build
+*.tsbuildinfo
+
+# misc
+.DS_Store
+.env*.local
+next-env.d.ts

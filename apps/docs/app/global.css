@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/*
+ * The documentation site inherits the platform portal design used by `apps/www`
+ * (`feat/nextjs-portal` theme): a deep navy background with a mint gradient
+ * accent. The portal palette is mapped onto Fumadocs' `--color-fd-*` tokens so
+ * every component picks up the InfiniteTeam look automatically.
+ */
+:root {
+  --font-sans: Pretendard, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+  --font-heading: var(--font-sans);
+  --radius: 0.75rem;
+}
+
+:root,
+.dark {
+  color-scheme: dark;
+
+  --color-fd-background: #151824;
+  --color-fd-foreground: #f7faf9;
+  --color-fd-card: #181b28;
+  --color-fd-card-foreground: #f7faf9;
+  --color-fd-popover: #181b28;
+  --color-fd-popover-foreground: #f7faf9;
+  --color-fd-primary: #40d88c;
+  --color-fd-primary-foreground: #071b13;
+  --color-fd-secondary: #1d2130;
+  --color-fd-secondary-foreground: #f7faf9;
+  --color-fd-muted: #1d2129;
+  --color-fd-muted-foreground: #929aa8;
+  --color-fd-accent: #1d2130;
+  --color-fd-accent-foreground: #f7faf9;
+  --color-fd-border: rgba(255, 255, 255, 0.1);
+  --color-fd-ring: #5eead4;
+  --color-fd-overlay: hsla(0, 0%, 0%, 0.4);
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: radial-gradient(
+      circle at 8% 0%,
+      rgba(64, 216, 140, 0.08),
+      transparent 30rem
+    ),
+    var(--color-fd-background);
+}
+
+a {
+  color: #6ee7b7;
+}
+a:hover {
+  color: #99f6e4;
+}
