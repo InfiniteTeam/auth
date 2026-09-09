@@ -55,11 +55,11 @@ deploy/      # Docker Compose (backend, www, lldap, PostgreSQL, reverse proxy)
 
 Auth endpoints (single source of truth: `packages/auth-core/src/client.ts`):
 
-- `GET /api/session` — returns the current session or 401. (200 with `null`
+- `GET /api/v1/session` — returns the current session or 401. (200 with `null`
   handling is done in the client; API returns 401 when unauthenticated.)
-- `POST /api/auth/ldap` — LDAP sign-in with `{ email, password }`.
-- `POST /api/auth/social/:provider` — start social sign-in (`github` / `discord`).
-- `DELETE /api/session` — sign out (204).
+- `POST /api/v1/auth/ldap` — LDAP sign-in with `{ email, password }`.
+- `POST /api/v1/auth/social/:provider` — start social sign-in (`github` / `discord`).
+- `DELETE /api/v1/session` — sign out (204).
 
 Shared constants live in `packages/shared/src/constants.ts`
 (`DOMAIN_AUTH`, `OIDC_ISSUER`, `SESSION_COOKIE_NAME`, `WEBFINGER_PATH`, `API_PREFIX`).
