@@ -8,9 +8,10 @@ import { SessionController } from "./session.controller.js";
 import { AdminModule } from "./admin/admin.module.js";
 import { LldapModule } from "../lldap/lldap.module.js";
 import { SessionModule } from "../session/session.module.js";
+import { SocialModule } from "../social/social.module.js";
 
 @Module({
-  imports: [LldapModule, SessionModule, AdminModule],
+  imports: [LldapModule, SessionModule, AdminModule, SocialModule],
   controllers: [AuthController, SessionController],
 })
 export class ApiModule {}

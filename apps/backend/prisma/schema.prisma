@@ -64,3 +64,55 @@ model Session {
 
   @@index([userId])
 }
+
+// A social identity (GitHub / Discord) linked to a local user account.
+//
+// `verified` reflects the ephemeral email verification completed at signup;
+// once true, the account is an accepted sign-in path. Email verification
+// artifacts (the magic code and the magic link token) are stored only as
+// SHA-256 hashes so the raw secrets never touch the database.
+model Account {
+  id                        String    @id
+  // lldap uid of the linked local account.
+  userId                    String
+  // Social provider: `github` or `discord`.
+  provider                  String
+  // User id as reported by the provider.
+  providerUserId            String
+  // Email reported by the provider (used as the new uid for fresh signups).
+  email                     String
+  // Display name taken from the provider profile.
+  name                      String?
+  // Avatar image URL from the provider.
+  avatarUrl                 String?
+  // Whether the signup email verification succeeded.
+  verified                  Boolean   @default(false)
+  // SHA-256 hash of the 6-digit signup verification code.
+  verificationCodeHash      String?
+  verificationCodeExpires   DateTime?
+  // SHA-256 hash of the one-time verification link token.
+  verificationTokenHash     String?
+  verificationTokenExpires  DateTime?
+  // Consecutive wrong-code attempts (bounded by VERIFY_MAX_ATTEMPTS).
+  verificationAttempts      Int       @default(0)
+  verifiedAt                DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+// Platform-level settings. Values are seeded from environment variables at
+// bootstrap and can be overridden at runtime through the admin API (the server
+// settings screen). `value` is a JSON document whose shape is specific to each
+// `key`; a `null` value means "fall back to the environment default".
+model PlatformSetting {
+  key       String    @id
+  value     Json?
+  updatedAt DateTime  @updatedAt
+  updatedBy String?
+
+  @@index([updatedAt])
+}

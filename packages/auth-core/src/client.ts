@@ -49,6 +49,10 @@ export interface AuthClient {
   loginLdap(input: LdapLoginInput): Promise<Session>;
   /** Starts a social (OAuth) sign-in flow for the given provider. */
   loginSocial(provider: "github" | "discord"): Promise<void>;
+  /** Verifies a social sign-up email with the six-digit code. */
+  verifySocialEmail(accountId: string, code: string): Promise<Session>;
+  /** Requests a fresh verification email for a pending sign-up account. */
+  resendSocialVerification(accountId: string): Promise<void>;
   /** Destroys the current session. */
   logout(): Promise<void>;
 }
@@ -142,6 +146,22 @@ export class AuthApiClient implements AuthClient {
     if (res.status !== 200) {
       throw new AuthApiError("Unable to start the social sign-in flow.", res.status, "social_failed");
     }
+  }
+
+  /** @inheritDoc */
+  async verifySocialEmail(accountId: string, code: string): Promise<Session> {
+    return this.request<Session>("/api/v1/auth/social/verify", {
+      method: "POST",
+      body: JSON.stringify({ accountId, code }),
+    });
+  }
+
+  /** @inheritDoc */
+  async resendSocialVerification(accountId: string): Promise<void> {
+    await this.request<void>("/api/v1/auth/social/verify/resend", {
+      method: "POST",
+      body: JSON.stringify({ accountId }),
+    });
   }
 
   /** @inheritDoc */

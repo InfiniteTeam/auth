@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { PermissionFlags, hasPermissions, type Session } from '@inftkr/auth-core';
-import { useSession, useSignOut } from '@inftkr/auth-core/react';
+import { useSession, useSignIn, useSignOut } from '@inftkr/auth-core/react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AuthShell } from '@/components/AuthShell';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +80,66 @@ function ToggleGroup({
   );
 }
 
+const LINKABLE_PROVIDERS = [
+  { id: 'github', label: 'GitHub' },
+  { id: 'discord', label: 'Discord' },
+] as const;
+
+type LinkableProviderId = (typeof LINKABLE_PROVIDERS)[number]['id'];
+
+function SocialConnect() {
+  const { signInSocial, isLoading } = useSignIn(BACKEND_URL);
+  const { session } = useSession({ baseUrl: BACKEND_URL });
+  const [pending, setPending] = useState<LinkableProviderId | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const providers = session
+    ? LINKABLE_PROVIDERS.filter((provider) => provider.id !== session.user.provider)
+    : LINKABLE_PROVIDERS;
+
+  const onConnect = useCallback(
+    async (provider: LinkableProviderId) => {
+      setError(null);
+      setPending(provider);
+      try {
+        await signInSocial(provider);
+      } catch {
+        setError('소셜 계정 연결을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      } finally {
+        setPending(null);
+      }
+    },
+    [signInSocial],
+  );
+
+  return (
+    <div className="profile-card flex flex-col gap-3">
+      <div>
+        <p>소셜 계정 연결</p>
+        <p className="mt-1">다른 소셜 계정을 연결하면 그 계정으로도 로그인할 수 있습니다.</p>
+      </div>
+      {error ? (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        {providers.map((provider) => (
+          <Button
+            key={provider.id}
+            variant="outline"
+            size="sm"
+            disabled={isLoading || !!pending}
+            onClick={() => onConnect(provider.id)}
+          >
+            {pending === provider.id ? '연결 중…' : `${provider.label} 연결`}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AccountTab({
   session,
   signingOut,
@@ -98,12 +159,10 @@ function AccountTab({
           {session.user.provider} · {session.user.roles.join(', ') || 'user'}
         </div>
       </div>
+      <SocialConnect />
       <Button size="lg" variant="destructive" disabled={signingOut} onClick={onSignOut}>
         {signingOut ? '로그아웃 중…' : '로그아웃'}
       </Button>
-      <p className="text-sm text-muted-foreground">
-        프로필 변경과 소셜 계정 연결 기능은 준비 중입니다.
-      </p>
     </div>
   );
 }
@@ -438,7 +497,20 @@ function ClientsTab({ canCreate, canDelete }: { canCreate: boolean; canDelete: b
   );
 }
 
-export default function SettingsPage() {
+function ConnectedNotice() {
+  const searchParams = useSearchParams();
+  if (searchParams.get('social') !== 'connected') {
+    return null;
+  }
+  return (
+    <Alert className="mb-4">
+      <AlertTitle>연결 완료</AlertTitle>
+      <AlertDescription>소셜 계정이 성공적으로 연결되었습니다.</AlertDescription>
+    </Alert>
+  );
+}
+
+function SettingsPage() {
   const { session, isLoading } = useSession({ baseUrl: BACKEND_URL });
   const { signOut } = useSignOut(BACKEND_URL);
   const [activeTab, setActiveTab] = useState<Tab>('account');
@@ -521,6 +593,8 @@ export default function SettingsPage() {
         ) : null}
       </div>
 
+      <ConnectedNotice />
+
       {activeTab === 'account' ? (
         <AccountTab session={session} signingOut={signingOut} onSignOut={onSignOut} />
       ) : (
@@ -531,5 +605,22 @@ export default function SettingsPage() {
         <Link href="/">계정 홈으로 돌아가기</Link>
       </p>
     </AuthShell>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense
+      fallback={
+        <AuthShell requestLabel="계정 관리" requestName="보안 및 프로필 설정" wide>
+          <div className="flow-loading" role="status">
+            <span className="spinner" />
+            계정 정보를 불러오는 중입니다.
+          </div>
+        </AuthShell>
+      }
+    >
+      <SettingsPage />
+    </Suspense>
   );
 }

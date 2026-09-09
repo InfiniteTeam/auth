@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@inftkr/shared";
-import { AuthApiClient } from "./client.js";
+import { AuthApiClient, AuthApiError } from "./client.js";
 
 /**
  * Options for {@link useSession}.
@@ -106,6 +106,66 @@ export function useSignIn(baseUrl = "") {
   );
 
   return { signInLdap, signInSocial, isLoading };
+}
+
+/**
+ * React hook exposing the email-verification actions for social sign-up.
+ * `verify` completes verification and signs the user in; `resend` requests a
+ * fresh verification email.
+ */
+export function useSocialVerification(baseUrl = "") {
+  const client = new AuthApiClient({ baseUrl });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Verifies the sign-up email with the emailed six-digit code.
+   */
+  const verify = useCallback(
+    async (accountId: string, code: string): Promise<Session | null> => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        return await client.verifySocialEmail(accountId, code);
+      } catch (err) {
+        setError(
+          err instanceof AuthApiError
+            ? err.message
+            : "Verification failed. Please try again.",
+        );
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [client],
+  );
+
+  /**
+   * Requests a fresh verification email for a pending sign-up account.
+   */
+  const resend = useCallback(
+    async (accountId: string): Promise<boolean> => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        await client.resendSocialVerification(accountId);
+        return true;
+      } catch (err) {
+        setError(
+          err instanceof AuthApiError
+            ? err.message
+            : "Unable to resend the verification email.",
+        );
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [client],
+  );
+
+  return { verify, resend, isLoading, error };
 }
 
 /**

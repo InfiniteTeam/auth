@@ -7,23 +7,9 @@ import { BadRequestException } from "@nestjs/common";
 import { SnowflakeGenerator } from "../../common/snowflake.js";
 import { TAILSCALE_CLIENT_ID } from "../../oidc/provider.factory.js";
 import { AdminClientsService } from "./admin-clients.service.js";
-import type { AppConfig } from "../../config/config.js";
+import { appConfigFixture } from "../../config/app-config.fixture.js";
 
-const config: AppConfig = {
-  port: 3000,
-  nodeEnv: "test",
-  issuerUrl: "http://localhost:3000",
-  sessionSecret: "test-session-secret",
-  jwksPath: "./jwks.json",
-  tailscaleClientSecret: "test-client-secret",
-  databaseUrl: "postgresql://auth:auth@localhost:5432/auth",
-  lldapUrl: "http://localhost:17170",
-  lldapAdminDn: "admin",
-  lldapAdminPassword: "test",
-  lldapAdminGroupName: "admins",
-  snowflakeWorkerId: 0,
-  snowflakeEpochMs: Date.UTC(2026, 8, 8),
-};
+const config = appConfigFixture();
 
 function createService(overrides: Record<string, unknown> = {}) {
   const prisma = {

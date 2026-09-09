@@ -37,6 +37,16 @@ export class LldapAuthenticationError extends Error {
   }
 }
 
+/**
+ * Error thrown when a lldap write operation (e.g. `createUser`) fails.
+ */
+export class LldapWriteError extends Error {
+  constructor(message = "lldap write operation failed") {
+    super(message);
+    this.name = "LldapWriteError";
+  }
+}
+
 @Injectable()
 export class LldapService {
   constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {}
@@ -77,7 +87,7 @@ export class LldapService {
    * Resolves a user's lldap uid from their primary email address by listing
    * users through the GraphQL endpoint. Returns `null` when no match is found.
    */
-  private async resolveUidByEmail(email: string): Promise<string | null> {
+  async resolveUidByEmail(email: string): Promise<string | null> {
     const jwt = await this.serviceToken();
     if (!jwt) {
       return null;
@@ -102,6 +112,50 @@ export class LldapService {
       return match?.id ?? null;
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Creates a user through lldap's GraphQL API. Used by the social sign-up
+   * flow after the reported email has been verified. Throws
+   * {@link LldapWriteError} when the mutation fails (e.g. duplicate uid).
+   */
+  async createUser(input: {
+    /** lldap uid; on the inft-auth platform this is the email address. */
+    uid: string;
+    /** Primary email address. */
+    email: string;
+    /** Display name. */
+    displayName: string;
+  }): Promise<void> {
+    const jwt = await this.serviceToken();
+    if (!jwt) {
+      throw new LldapWriteError();
+    }
+    const mutation = `mutation($user: CreateUserInput!) { createUser(user: $user) { id } }`;
+    const res = await fetch(`${this.config.lldapUrl}/api/graphql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({
+        query: mutation,
+        variables: {
+          user: {
+            id: input.uid,
+            email: input.email,
+            displayName: input.displayName,
+          },
+        },
+      }),
+    });
+    if (!res.ok) {
+      throw new LldapWriteError();
+    }
+    const body = (await res.json()) as { errors?: unknown[] };
+    if (body.errors?.length) {
+      throw new LldapWriteError();
     }
   }
 
