@@ -33,7 +33,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.enableCors({
-    origin: true,
+    origin: process.env.ISSUER_URL ?? false,
     credentials: true,
   });
 
