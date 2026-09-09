@@ -18,6 +18,8 @@ const config: AppConfig = {
   lldapAdminDn: "admin",
   lldapAdminPassword: "test",
   lldapAdminGroupName: "admins",
+  snowflakeWorkerId: 0,
+  snowflakeEpochMs: Date.UTC(2026, 8, 8),
 };
 
 function createService(overrides: Record<string, unknown> = {}) {

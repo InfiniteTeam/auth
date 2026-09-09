@@ -67,6 +67,7 @@ async function bootstrap(): Promise<void> {
     .setVersion("1.0.0")
     .addTag("auth")
     .addTag("session")
+    .addTag("admin")
     .addTag("webfinger")
     .build();
   const document = SwaggerModule.createDocument(app, documentConfig);

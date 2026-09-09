@@ -3,6 +3,8 @@
  * environment variables on bootstrap.
  */
 
+import { DEFAULT_SNOWFLAKE_EPOCH_MS } from "../common/snowflake.js";
+
 export interface AppConfig {
   /** HTTP port the server listens on. */
   port: number;
@@ -26,6 +28,10 @@ export interface AppConfig {
   lldapAdminPassword: string;
   /** lldap group whose members receive every platform permission. */
   lldapAdminGroupName: string;
+  /** Snowflake generator worker id (`[0, 1023]`). */
+  snowflakeWorkerId: number;
+  /** Snowflake epoch in milliseconds (defaults to `2026-09-08T00:00:00Z`). */
+  snowflakeEpochMs: number;
 }
 
 function required(name: string, value: string | undefined): string {
@@ -54,6 +60,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       env.LLDAP_ADMIN_PASSWORD,
     ),
     lldapAdminGroupName: env.ADMIN_GROUP_NAME ?? "admins",
+    snowflakeWorkerId: Number(env.SNOWFLAKE_WORKER_ID ?? 0),
+    snowflakeEpochMs: Number(env.SNOWFLAKE_EPOCH_MS ?? DEFAULT_SNOWFLAKE_EPOCH_MS),
   };
 }
 
