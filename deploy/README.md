@@ -30,7 +30,16 @@ docker compose logs -f
 ```
 
 Follow the prompts for domain, admin password and Cloudflare Tunnel.
-A `.env` file is generated and `docker compose up -d --build` is run.
+A `.env` file is generated. Starting the stack:
+
+```bash
+docker compose up -d --build              # without the tunnel
+docker compose --profile tunnel up -d --build   # include cloudflared
+```
+
+`cloudflared` runs under the `tunnel` Compose profile so a fresh install
+starts cleanly even when the tunnel files (`cloudflared/config.yml`,
+`cloudflared/credentials.json`) have not been generated yet.
 
 ## Manual install
 
@@ -162,8 +171,8 @@ open('cloudflared/config.yml', 'w').write(conf)
 EOF
 ```
 
-Then start the tunnel with `docker compose up -d cloudflared`, or restart
-the whole stack after populating `.env`.
+Then start the tunnel with `docker compose --profile tunnel up -d cloudflared`,
+or restart the whole stack after populating `.env`.
 
 ## Integrate an external service (auth-sdk)
 

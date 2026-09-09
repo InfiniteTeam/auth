@@ -57,6 +57,8 @@ check_tools() {
 }
 
 main() {
+  check_tools
+
   echo
   info "=== inft-auth self-hosted deployment setup ==="
   echo
@@ -201,11 +203,16 @@ EOF
   # ---------------- docker compose ----------------
   echo
   info "Deploying with docker compose..."
+  COMPOSE_PROFILE_ARGS=()
+  if [[ "$WITH_TUNNEL" =~ ^[Yy]$ ]]; then
+    COMPOSE_PROFILE_ARGS=(--profile tunnel)
+  fi
   if read -r -p "Start now? (Y/n): " start_now && [[ ! "$start_now" =~ ^[Nn]$ ]]; then
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" up -d --build
+    docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$ENV_FILE" \
+      "${COMPOSE_PROFILE_ARGS[@]}" up -d --build
     ok "Deployment complete! Visit https://${AUTH_DOMAIN}"
   else
-    warn "Start later: docker compose up -d --build"
+    warn "Start later: docker compose ${COMPOSE_PROFILE_ARGS[*]} up -d --build"
   fi
 
   echo

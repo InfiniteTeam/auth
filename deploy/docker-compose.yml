@@ -122,11 +122,15 @@ services:
       - inft
 
   # ------------------------------------------------------------
-  # cloudflared — Cloudflare Tunnel (locally-managed ingress)
+  # cloudflared — Cloudflare Tunnel (locally-managed ingress).
+  # Optional: enabled with `docker compose --profile tunnel up -d`.
+  # Requires generated files (see deploy/cloudflared/config.yml.example).
   # ------------------------------------------------------------
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
+    profiles:
+      - tunnel
     container_name: cloudflared-inft-auth
     depends_on:
       - backend
