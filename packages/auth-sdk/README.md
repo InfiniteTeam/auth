@@ -1,4 +1,4 @@
-# @inft/auth-sdk
+# @inftkr/auth-sdk
 
 OpenID Connect client SDK for consumer services that want to integrate with the
 [inft-auth](https://github.com/InfiniteTeam/auth) identity platform — or any
@@ -18,14 +18,14 @@ standards-compliant OIDC provider.
 ## Install
 
 ```bash
-pnpm add @inft/auth-sdk
-# or: npm install @inft/auth-sdk
+pnpm add @inftkr/auth-sdk
+# or: npm install @inftkr/auth-sdk
 ```
 
 ## Quick start
 
 ```ts
-import { OidcClient } from "@inft/auth-sdk";
+import { OidcClient } from "@inftkr/auth-sdk";
 
 const client = new OidcClient({
   issuerUrl: "https://auth.inft.kr",

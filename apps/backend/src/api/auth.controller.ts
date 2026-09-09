@@ -15,8 +15,8 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
-import type { Session } from "@inft/shared";
-import { SESSION_COOKIE_NAME } from "@inft/shared";
+import type { Session } from "@inftkr/shared";
+import { SESSION_COOKIE_NAME } from "@inftkr/shared";
 import { LdapLoginDto } from "./dto/auth.dto.js";
 import {
   LldapAuthenticationError,

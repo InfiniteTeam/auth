@@ -2,7 +2,7 @@
  * Client-side wrapper for the admin OIDC client management API
  * (`/api/v1/admin/clients`).
  *
- * The admin API lives outside the shared `@inft/auth-core` contract and is
+ * The admin API lives outside the shared `@inftkr/auth-core` contract and is
  * consumed by the portal's settings page. Requests carry the session cookie
  * (`credentials: "include"`) and normalize failures into {@link AdminApiError}.
  */

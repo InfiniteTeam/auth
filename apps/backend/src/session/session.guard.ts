@@ -1,5 +1,5 @@
 /**
- * Nest adapter over the `@inft/auth-core` shared auth layer.
+ * Nest adapter over the `@inftkr/auth-core` shared auth layer.
  *
  * The shared {@link SessionResolver} contract resolves the current request's
  * session with no arguments — the resolver is expected to know the request
@@ -15,9 +15,9 @@ import {
   Scope,
 } from "@nestjs/common";
 import { REQUEST } from "@nestjs/core";
-import type { SessionResolver as AuthCoreSessionResolver } from "@inft/auth-core";
-import { SESSION_COOKIE_NAME } from "@inft/shared";
-import type { Session } from "@inft/shared";
+import type { SessionResolver as AuthCoreSessionResolver } from "@inftkr/auth-core";
+import { SESSION_COOKIE_NAME } from "@inftkr/shared";
+import type { Session } from "@inftkr/shared";
 import type { Request } from "express";
 import { SessionService } from "./session.service.js";
 
@@ -32,7 +32,7 @@ export function readSessionCookie(req: Request): string | undefined {
 }
 
 /**
- * Request-scoped resolver that implements the `@inft/auth-core`
+ * Request-scoped resolver that implements the `@inftkr/auth-core`
  * {@link AuthCoreSessionResolver} contract by reading the current request's
  * signed `inft_session` cookie.
  */

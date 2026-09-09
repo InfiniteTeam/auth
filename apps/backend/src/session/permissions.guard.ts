@@ -18,9 +18,9 @@ import {
   SetMetadata,
   UnauthorizedException,
 } from "@nestjs/common";
-import { PermissionBitField } from "@inft/shared";
-import type { PermissionResolvable } from "@inft/shared";
-import type { Session } from "@inft/shared";
+import { PermissionBitField } from "@inftkr/shared";
+import type { PermissionResolvable } from "@inftkr/shared";
+import type { Session } from "@inftkr/shared";
 import type { Request } from "express";
 import { SessionGuard } from "./session.guard.js";
 

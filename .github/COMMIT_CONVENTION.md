@@ -78,10 +78,10 @@ scope is clearly more precise:
 | --- | --- |
 | `root` | Root/monorepo setup (pnpm workspace, turbo, tsconfig, husky) |
 | `packages` | Shared workspace packages (`packages/*`) |
-| `shared` | `@inft/shared` |
-| `auth-core` | `@inft/auth-core` |
-| `auth-sdk` | `@inft/auth-sdk` |
-| `scripts` | `@inft/scripts` |
+| `shared` | `@inftkr/shared` |
+| `auth-core` | `@inftkr/auth-core` |
+| `auth-sdk` | `@inftkr/auth-sdk` |
+| `scripts` | `@inftkr/scripts` |
 | `backend` | `apps/backend` |
 | `www` | `apps/www` |
 | `deploy` | `deploy/` (Docker Compose, lldap, cloudflared) |

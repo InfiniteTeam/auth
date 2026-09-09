@@ -1,5 +1,5 @@
 /**
- * @inft/auth-sdk
+ * @inftkr/auth-sdk
  *
  * OpenID Connect client SDK for consumer services that want to integrate with
  * the inft-auth identity platform (or any OIDC-compliant provider).

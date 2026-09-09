@@ -1,5 +1,5 @@
 {
-  "name": "@inft/auth-core",
+  "name": "@inftkr/auth-core",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -26,7 +26,7 @@
     "docs": "pnpm build:docs && mkdir -p docs && api-extractor run --local && generate-split-documentation"
   },
   "dependencies": {
-    "@inft/shared": "workspace:*"
+    "@inftkr/shared": "workspace:*"
   },
   "peerDependencies": {
     "next": ">=15",
@@ -39,7 +39,7 @@
     "react-dom": { "optional": true }
   },
   "devDependencies": {
-    "@inft/scripts": "workspace:*",
+    "@inftkr/scripts": "workspace:*",
     "@microsoft/api-extractor": "^7.47.0",
     "@types/react": "^18.3.9",
     "tsup": "^8.3.5",

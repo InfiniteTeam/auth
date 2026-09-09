@@ -5,7 +5,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { ForbiddenException, UnauthorizedException } from "@nestjs/common";
 import type { ExecutionContext } from "@nestjs/common";
-import { PermissionFlags, type Session } from "@inft/shared";
+import { PermissionFlags, type Session } from "@inftkr/shared";
 import {
   PERMISSIONS_KEY,
   PermissionsGuard,
@@ -18,7 +18,7 @@ function session(permissions?: string): Session {
     user: {
       provider: "ldap",
       userId: "devuser",
-      email: "devuser@inft.kr",
+      email: "devuser@inftkr.kr",
       name: "Dev User",
       roles: ["user"],
       ...(permissions ? { permissions } : {}),

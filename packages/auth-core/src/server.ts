@@ -1,4 +1,4 @@
-import type { Session, SessionUser } from "@inft/shared";
+import type { Session, SessionUser } from "@inftkr/shared";
 
 /**
  * Abstraction that resolves the current {@link Session} from a request.

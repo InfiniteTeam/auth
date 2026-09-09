@@ -1,6 +1,6 @@
 /**
  * Error model for the SDK, mirroring the `AuthApiError` convention used by
- * `@inft/auth-core`.
+ * `@inftkr/auth-core`.
  */
 
 /**

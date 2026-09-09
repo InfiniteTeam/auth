@@ -7,7 +7,7 @@
 
 import { Controller, Get, Inject, Query } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { DOMAIN_ROOT, OIDC_ISSUER } from "@inft/shared";
+import { DOMAIN_ROOT, OIDC_ISSUER } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
 
 interface WebFingerLink {

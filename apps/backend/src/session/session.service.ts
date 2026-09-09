@@ -9,8 +9,8 @@
 
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
-import type { AuthProvider, Role, Session, SessionUser } from "@inft/shared";
-import { SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@inft/shared";
+import type { AuthProvider, Role, Session, SessionUser } from "@inftkr/shared";
+import { SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@inftkr/shared";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
 

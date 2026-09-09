@@ -9,8 +9,8 @@
  */
 
 import { Inject, Injectable } from "@nestjs/common";
-import { PermissionBitField } from "@inft/shared";
-import type { Role } from "@inft/shared";
+import { PermissionBitField } from "@inftkr/shared";
+import type { Role } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
 
 /** Result of a successful lldap authentication. */

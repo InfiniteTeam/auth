@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Session } from "@inft/shared";
+import type { Session } from "@inftkr/shared";
 import { AuthApiClient } from "./client.js";
 
 /**

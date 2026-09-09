@@ -6,8 +6,8 @@ import { Suspense, useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AuthApiError } from '@inft/auth-core';
-import { useSignIn } from '@inft/auth-core/react';
+import { AuthApiError } from '@inftkr/auth-core';
+import { useSignIn } from '@inftkr/auth-core/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
@@ -92,7 +92,7 @@ function LoginForm() {
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="you@inft.kr"
+            placeholder="you@inftkr.kr"
             className="h-11"
             {...form.register('email')}
           />

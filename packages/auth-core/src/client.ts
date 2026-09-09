@@ -1,4 +1,4 @@
-import type { Session } from "@inft/shared";
+import type { Session } from "@inftkr/shared";
 
 /**
  * Configuration options for an {@link AuthApiClient}.
@@ -58,7 +58,7 @@ export interface AuthClient {
  *
  * Attaches cookies on every request and normalizes errors into
  * {@link AuthApiError}. Intended to be shared by backend and frontend
- * code through `@inft/auth-core` (in the spirit of Auth.js).
+ * code through `@inftkr/auth-core` (in the spirit of Auth.js).
  */
 export class AuthApiClient implements AuthClient {
   constructor(private readonly options: ApiClientOptions) {}

@@ -43,7 +43,7 @@ describe("SessionService", () => {
     const res = await service.createSession({
       userId: "devuser",
       provider: "ldap",
-      email: "devuser@inft.kr",
+      email: "devuser@inftkr.kr",
       name: "Dev User",
       roles: ["user"],
       permissions: "0",
@@ -78,7 +78,7 @@ describe("SessionService", () => {
     const { session, cookieValue } = await service.createSession({
       userId: "devuser",
       provider: "ldap",
-      email: "devuser@inft.kr",
+      email: "devuser@inftkr.kr",
       name: "Dev User",
       roles: ["user"],
       permissions: "0",
@@ -87,7 +87,7 @@ describe("SessionService", () => {
       id: session.id,
       userId: "devuser",
       provider: "ldap",
-      email: "devuser@inft.kr",
+      email: "devuser@inftkr.kr",
       name: "Dev User",
       roles: ["user"],
       permissions: "0",
@@ -106,7 +106,7 @@ describe("SessionService", () => {
     const { session, cookieValue } = await service.createSession({
       userId: "devuser",
       provider: "ldap",
-      email: "devuser@inft.kr",
+      email: "devuser@inftkr.kr",
       name: "Dev User",
       roles: ["user"],
       permissions: "0",
@@ -115,7 +115,7 @@ describe("SessionService", () => {
       id: session.id,
       userId: "devuser",
       provider: "ldap",
-      email: "devuser@inft.kr",
+      email: "devuser@inftkr.kr",
       name: "Dev User",
       roles: ["user"],
       issuedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
@@ -132,7 +132,7 @@ describe("SessionService", () => {
     const { cookieValue } = await service.createSession({
       userId: "devuser",
       provider: "ldap",
-      email: "devuser@inft.kr",
+      email: "devuser@inftkr.kr",
       name: "Dev User",
       roles: ["user"],
       permissions: "0",

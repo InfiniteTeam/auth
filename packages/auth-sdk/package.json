@@ -1,5 +1,5 @@
 {
-  "name": "@inft/auth-sdk",
+  "name": "@inftkr/auth-sdk",
   "version": "0.1.0",
   "type": "module",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "jose": "^6.2.12"
   },
   "devDependencies": {
-    "@inft/scripts": "workspace:*",
+    "@inftkr/scripts": "workspace:*",
     "@microsoft/api-extractor": "^7.47.0",
     "@types/node": "^26.5.0",
     "tsup": "^8.3.5",

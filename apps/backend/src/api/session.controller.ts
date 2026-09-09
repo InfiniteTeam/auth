@@ -1,7 +1,7 @@
 /**
  * Session controller — `GET/DELETE /api/v1/session`.
  *
- * Follows the shared `@inft/auth-core` contract: `GET` returns the current
+ * Follows the shared `@inftkr/auth-core` contract: `GET` returns the current
  * session or `401` when unauthenticated, `DELETE` signs out (revokes) and
  * returns `204`.
  */
@@ -17,8 +17,8 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Request, Response } from "express";
-import { SESSION_COOKIE_NAME } from "@inft/shared";
-import type { Session } from "@inft/shared";
+import { SESSION_COOKIE_NAME } from "@inftkr/shared";
+import type { Session } from "@inftkr/shared";
 import { SessionService } from "../session/session.service.js";
 
 @ApiTags("session")

@@ -3,7 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PermissionBitField } from "@inft/shared";
+import { PermissionBitField } from "@inftkr/shared";
 import { LldapService } from "./lldap.service.js";
 import type { AppConfig } from "../config/config.js";
 

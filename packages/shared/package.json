@@ -1,5 +1,5 @@
 {
-  "name": "@inft/shared",
+  "name": "@inftkr/shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -20,7 +20,7 @@
     "docs": "pnpm build:docs && mkdir -p docs && api-extractor run --local && generate-split-documentation"
   },
   "devDependencies": {
-    "@inft/scripts": "workspace:*",
+    "@inftkr/scripts": "workspace:*",
     "@microsoft/api-extractor": "^7.47.0",
     "tsup": "^8.3.5",
     "typescript": "^5.5.4"

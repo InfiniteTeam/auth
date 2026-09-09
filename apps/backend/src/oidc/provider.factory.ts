@@ -16,7 +16,7 @@ import Provider, {
   type Configuration,
   type FindAccount,
 } from "oidc-provider";
-import { OIDC_ISSUER } from "@inft/shared";
+import { OIDC_ISSUER } from "@inftkr/shared";
 import { PrismaService } from "../prisma/prisma.service.js";
 import type { AppConfig } from "../config/config.js";
 import { LldapService } from "../lldap/lldap.service.js";

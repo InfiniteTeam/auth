@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession } from '@inft/auth-core/react';
+import { useSession } from '@inftkr/auth-core/react';
 import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
 import { BACKEND_URL } from '@/lib/auth';

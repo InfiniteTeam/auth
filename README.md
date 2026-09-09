@@ -35,10 +35,10 @@ apps/
   backend/   # Nest.js + oidc-provider — OIDC/OAuth2 server, session API
   www/       # Next.js — frontend UI only (login, consent, management)
 packages/
-  shared/    # @inft/shared   — shared constants & domain types
-  auth-core/ # @inft/auth-core — shared auth core: types, client, guards, react hooks
-  auth-sdk/  # @inft/auth-sdk  — OIDC SDK for external consumer services
-  scripts/   # @inft/scripts   — internal tooling (private, docs generation)
+  shared/    # @inftkr/shared   — shared constants & domain types
+  auth-core/ # @inftkr/auth-core — shared auth core: types, client, guards, react hooks
+  auth-sdk/  # @inftkr/auth-sdk  — OIDC SDK for external consumer services
+  scripts/   # @inftkr/scripts   — internal tooling (private, docs generation)
 deploy/      # Docker Compose (backend, www, lldap, PostgreSQL, reverse proxy)
 ```
 

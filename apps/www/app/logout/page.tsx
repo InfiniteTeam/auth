@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useSignOut } from '@inft/auth-core/react';
+import { useSignOut } from '@inftkr/auth-core/react';
 import { AuthShell } from '@/components/AuthShell';
 import { BACKEND_URL } from '@/lib/auth';
 

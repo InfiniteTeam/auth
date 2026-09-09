@@ -11,5 +11,5 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   target: "node22",
-  external: ["@inft/shared", "react", "react-dom", "next"],
+  external: ["@inftkr/shared", "react", "react-dom", "next"],
 });

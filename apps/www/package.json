@@ -1,5 +1,5 @@
 {
-  "name": "@inft/www",
+  "name": "@inftkr/www",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,13 +9,13 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "docs": "echo \"@inft/www is an app and has no public API docs\""
+    "docs": "echo \"@inftkr/www is an app and has no public API docs\""
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
     "@hookform/resolvers": "^5.9.1",
-    "@inft/auth-core": "workspace:*",
-    "@inft/shared": "workspace:*",
+    "@inftkr/auth-core": "workspace:*",
+    "@inftkr/shared": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",

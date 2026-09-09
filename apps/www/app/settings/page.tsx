@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PermissionFlags, hasPermissions, type Session } from '@inft/auth-core';
-import { useSession, useSignOut } from '@inft/auth-core/react';
+import { PermissionFlags, hasPermissions, type Session } from '@inftkr/auth-core';
+import { useSession, useSignOut } from '@inftkr/auth-core/react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AuthShell } from '@/components/AuthShell';
 import { Badge } from '@/components/ui/badge';

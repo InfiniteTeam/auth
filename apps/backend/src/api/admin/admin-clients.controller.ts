@@ -16,7 +16,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { PermissionFlags } from "@inft/shared";
+import { PermissionFlags } from "@inftkr/shared";
 import { Permissions, PermissionsGuard } from "../../session/permissions.guard.js";
 import { AdminClientsService } from "./admin-clients.service.js";
 import {

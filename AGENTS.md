@@ -12,10 +12,10 @@ apps/
   backend/   # Nest.js + oidc-provider — OIDC/OAuth2 server, session API
   www/       # Next.js — frontend UI only (login, consent, management)
 packages/
-  shared/    # @inft/shared   — shared constants & domain types
-  auth-core/ # @inft/auth-core — shared auth core: types, client, guards, react hooks
-  auth-sdk/  # @inft/auth-sdk  — OIDC SDK for external consumer services
-  scripts/   # @inft/scripts   — internal tooling (private, docs generation)
+  shared/    # @inftkr/shared   — shared constants & domain types
+  auth-core/ # @inftkr/auth-core — shared auth core: types, client, guards, react hooks
+  auth-sdk/  # @inftkr/auth-sdk  — OIDC SDK for external consumer services
+  scripts/   # @inftkr/scripts   — internal tooling (private, docs generation)
 deploy/      # Docker Compose (backend, www, lldap, PostgreSQL, reverse proxy)
 ```
 
@@ -71,7 +71,7 @@ Each workspace package generates its API docs via commands:
 1. `build:docs` — `tsc -p tsconfig.docs.json` (emit declarations to `dist-docs/`).
 2. `api-extractor run --local` — produces `docs/api-report.md` (uses the
    package-local `api-extractor.json`).
-3. `generate-split-documentation` — `@inft/scripts` CLI that splits the report
+3. `generate-split-documentation` — `@inftkr/scripts` CLI that splits the report
    into per-member Markdown files under `docs/`.
 
 Run for all packages: `pnpm docs` (turbo task `docs`, depends on `^build`).
