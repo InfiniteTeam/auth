@@ -63,7 +63,7 @@ function LoginForm() {
       try {
         await signInSocial(provider);
       } catch {
-        setError('소셜 로그인은 준비 중입니다.');
+        setError('소셜 로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.');
       } finally {
         setSocialPending(null);
       }

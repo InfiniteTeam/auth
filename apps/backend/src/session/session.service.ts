@@ -48,12 +48,14 @@ export class SessionService {
   /**
    * Cookie attributes for the `inft_session` cookie. The `Secure` flag is only
    * applied in `production` so local development over plain `http://localhost`
-   * keeps working; production always runs behind TLS.
+   * keeps working; production always runs behind TLS. `maxAge` is converted to
+   * milliseconds because Express `res.cookie` interprets it in milliseconds.
    */
   get cookieOptions(): Readonly<typeof SESSION_COOKIE> & { secure: boolean } {
     return {
       ...SESSION_COOKIE,
       secure: this.config.nodeEnv === "production",
+      maxAge: SESSION_COOKIE.maxAge * 1000,
     };
   }
 

@@ -65,6 +65,13 @@ Managed in `deploy/.env`. See [.env.example](./.env.example) for details.
 | `LLDAP_ADMIN_EMAIL` | lldap admin email (set on bootstrap; backend login resolves users by email) | `admin@example.com` |
 | `SESSION_SECRET` | Session/cookie signing secret | - |
 | `TAILSCALE_CLIENT_SECRET` | Tailscale OIDC client secret | - |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth app for social sign-in | - |
+| `GITHUB_ORG` | GitHub org required for membership gate | `infinite-team` |
+| `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | Discord OAuth2 application for social sign-in | - |
+| `DISCORD_GUILD_ID` | Discord guild required for membership gate | - |
+| `DISCORD_ROLE_IDS` | Comma-separated Discord role IDs allowed to sign in | `1001,1002` |
+| `SOCIAL_REDIRECT_BASE_URL` | Origin used for the verification email link (defaults to `ISSUER_URL`) | `https://auth.example.com` |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | SMTP settings for sign-up email verification. Omit to disable (social sign-up then fails with `verification_unavailable`) | - |
 | `TUNNEL_TOKEN` | Cloudflare Tunnel token (optional) | - |
 
 ## Domain routing
