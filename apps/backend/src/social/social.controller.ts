@@ -3,9 +3,16 @@
  * `GET .../:provider/callback` (OAuth redirect), and the email-verification
  * endpoints for sign-up.
  *
- * The start endpoint responds with a `302` to the provider authorization URL
- * (setting the signed `inft_oauth_state` cookie), which is what
- * `@inftkr/auth-core`'s `loginSocial` expects.
+ * The static verification routes are declared before the parametrized
+ * `:provider` routes: Express matches routes in declaration order, so a
+ * request such as `POST /api/v1/auth/social/verify` would otherwise be
+ * captured by `@Post(":provider")` and fail the provider whitelist check.
+ *
+ * The start endpoint returns the provider authorization URL (setting the signed
+ * `inft_oauth_state` cookie) so `@inftkr/auth-core`'s `loginSocial` can
+ * navigate the browser to it. It deliberately avoids a `302` redirect: with
+ * `redirect: "manual"` fetch, browsers expose such redirects as opaque
+ * responses whose `url` is the original request URL, not the redirect target.
  */
 
 import {
@@ -60,94 +67,6 @@ export class SocialController {
     private readonly oauthState: OAuthStateService,
     private readonly sessionService: SessionService,
   ) {}
-
-  /**
-   * Starts a social sign-in flow by redirecting to the provider.
-   */
-  @Post(":provider")
-  @ApiOperation({ summary: "Start a social sign-in flow" })
-  @ApiResponse({ status: 302, description: "Redirect to the provider" })
-  @ApiResponse({ status: 404, description: "Provider is not enabled" })
-  async start(
-    @Param() params: SocialLoginParams,
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<void> {
-    const provider = params.provider as SocialProviderId;
-    if (!(await this.settings.isEnabled(provider))) {
-      throw new NotFoundException(
-        "Social sign-in is not available for this provider.",
-      );
-    }
-    const session = await this.currentSession(req);
-    const { authorizationUrl, cookieValue } = await this.social.start(
-      provider,
-      Boolean(session),
-    );
-    res.cookie(
-      OAUTH_STATE_COOKIE_NAME,
-      cookieValue,
-      this.oauthState.cookieOptions,
-    );
-    res.redirect(302, authorizationUrl);
-  }
-
-  /**
-   * Handles the provider's OAuth callback and redirects to the frontend with
-   * the appropriate outcome.
-   */
-  @Get(":provider/callback")
-  @ApiOperation({ summary: "Handle the provider OAuth callback" })
-  @ApiResponse({ status: 302, description: "Redirect to the frontend" })
-  async callback(
-    @Param() params: SocialLoginParams,
-    @Query() query: SocialCallbackQuery,
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<void> {
-    const provider = params.provider as SocialProviderId;
-    const rawState = (req.cookies as Record<string, string | undefined>)[
-      OAUTH_STATE_COOKIE_NAME
-    ];
-    res.clearCookie(
-      OAUTH_STATE_COOKIE_NAME,
-      this.oauthState.cookieOptions,
-    );
-    const session = await this.currentSession(req);
-    const outcome = await this.social.callback(
-      provider,
-      query,
-      rawState,
-      session,
-    );
-
-    const base = this.config.socialRedirectBaseUrl.replace(/\/$/, "");
-    switch (outcome.kind) {
-      case "login":
-        res.cookie(
-          SESSION_COOKIE_NAME,
-          outcome.cookieValue,
-          this.sessionService.cookieOptions,
-        );
-        res.redirect(302, `${base}/?social=ok`);
-        return;
-      case "connect":
-        res.redirect(302, `${base}/settings?social=connected`);
-        return;
-      case "verification":
-        res.redirect(
-          302,
-          `${base}/verify-email?account=${encodeURIComponent(outcome.accountId)}&provider=${encodeURIComponent(provider)}`,
-        );
-        return;
-      case "error":
-        res.redirect(
-          302,
-          `${base}/social/error?provider=${encodeURIComponent(provider)}&error=${encodeURIComponent(outcome.code)}`,
-        );
-        return;
-    }
-  }
 
   /**
    * Confirms an email with the six-digit code and returns a new session.
@@ -216,6 +135,95 @@ export class SocialController {
       this.sessionService.cookieOptions,
     );
     res.redirect(302, `${base}/?social=ok`);
+  }
+
+  /**
+   * Starts a social sign-in flow by returning the provider authorization URL.
+   */
+  @Post(":provider")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Start a social sign-in flow" })
+  @ApiResponse({ status: 200, description: "Provider authorization URL" })
+  @ApiResponse({ status: 404, description: "Provider is not enabled" })
+  async start(
+    @Param() params: SocialLoginParams,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ authorizationUrl: string }> {
+    const provider = params.provider as SocialProviderId;
+    if (!(await this.settings.isEnabled(provider))) {
+      throw new NotFoundException(
+        "Social sign-in is not available for this provider.",
+      );
+    }
+    const session = await this.currentSession(req);
+    const { authorizationUrl, cookieValue } = await this.social.start(
+      provider,
+      Boolean(session),
+    );
+    res.cookie(
+      OAUTH_STATE_COOKIE_NAME,
+      cookieValue,
+      this.oauthState.cookieOptions,
+    );
+    return { authorizationUrl };
+  }
+
+  /**
+   * Handles the provider's OAuth callback and redirects to the frontend with
+   * the appropriate outcome.
+   */
+  @Get(":provider/callback")
+  @ApiOperation({ summary: "Handle the provider OAuth callback" })
+  @ApiResponse({ status: 302, description: "Redirect to the frontend" })
+  async callback(
+    @Param() params: SocialLoginParams,
+    @Query() query: SocialCallbackQuery,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    const provider = params.provider as SocialProviderId;
+    const rawState = (req.cookies as Record<string, string | undefined>)[
+      OAUTH_STATE_COOKIE_NAME
+    ];
+    res.clearCookie(
+      OAUTH_STATE_COOKIE_NAME,
+      this.oauthState.cookieOptions,
+    );
+    const session = await this.currentSession(req);
+    const outcome = await this.social.callback(
+      provider,
+      query,
+      rawState,
+      session,
+    );
+
+    const base = this.config.socialRedirectBaseUrl.replace(/\/$/, "");
+    switch (outcome.kind) {
+      case "login":
+        res.cookie(
+          SESSION_COOKIE_NAME,
+          outcome.cookieValue,
+          this.sessionService.cookieOptions,
+        );
+        res.redirect(302, `${base}/?social=ok`);
+        return;
+      case "connect":
+        res.redirect(302, `${base}/settings?social=connected`);
+        return;
+      case "verification":
+        res.redirect(
+          302,
+          `${base}/verify-email?account=${encodeURIComponent(outcome.accountId)}&provider=${encodeURIComponent(provider)}`,
+        );
+        return;
+      case "error":
+        res.redirect(
+          302,
+          `${base}/social/error?provider=${encodeURIComponent(provider)}&error=${encodeURIComponent(outcome.code)}`,
+        );
+        return;
+    }
   }
 
   private async currentSession(req: Request): Promise<Session | null> {

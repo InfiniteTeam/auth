@@ -7,12 +7,12 @@
  * `code_verifier` travels in the signed OAuth state cookie.
  */
 
-import { Inject, Injectable } from "@nestjs/common";
+import { createHash } from "node:crypto";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OAuth2API } from "@discordjs/core";
 import { REST } from "@discordjs/rest";
-import { Routes } from "discord-api-types/v10";
 import type {
-  RESTGetAPIOAuth2CurrentAuthorizationResult,
+  RESTGetAPICurrentUserResult,
   RESTPostOAuth2AccessTokenURLEncodedData,
 } from "discord-api-types/v10";
 import { APP_CONFIG, type AppConfig } from "../../config/config.js";
@@ -35,6 +35,8 @@ const SCOPES_BASE = ["identify", "email"];
 export class DiscordProvider implements SocialProvider {
   readonly id: SocialProviderId = "discord";
   readonly requiresPkce = true;
+
+  private readonly logger = new Logger(DiscordProvider.name);
 
   private readonly rest: REST;
   private readonly oauth2: OAuth2API;
@@ -66,12 +68,17 @@ export class DiscordProvider implements SocialProvider {
     });
     if (input.codeChallenge) {
       const query = new URLSearchParams({
-        code_challenge: input.codeChallenge,
+        code_challenge: this.s256Challenge(input.codeChallenge),
         code_challenge_method: "S256",
       });
       return `${url}${url.includes("?") ? "&" : "?"}${query.toString()}`;
     }
     return url;
+  }
+
+  /** RFC 7636 S256 challenge: `base64url(SHA-256(code_verifier))`. */
+  private s256Challenge(codeVerifier: string): string {
+    return createHash("sha256").update(codeVerifier).digest("base64url");
   }
 
   async exchangeCode(input: {
@@ -98,16 +105,23 @@ export class DiscordProvider implements SocialProvider {
         scope: result.scope,
         expiresAt: new Date(Date.now() + result.expires_in * 1000),
       };
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        `Discord code exchange failed: ${this.describe(error)}`,
+      );
       throw new SocialOAuthError("discord", "Discord code exchange failed");
     }
   }
 
   async fetchProfile(accessToken: string): Promise<SocialProfile> {
-    this.rest.setToken(accessToken);
     try {
-      const result = await this.oauth2.getCurrentAuthorizationInformation();
-      const user = this.user(result);
+      const user = (await this.api(
+        "users/@me",
+        accessToken,
+      )) as RESTGetAPICurrentUserResult;
+      this.logger.log(
+        `Discord @me: user=${user.id} email=${user.email ? "set" : "EMPTY"} verified=${String(user.verified ?? "?")}`,
+      );
       return {
         providerUserId: user.id,
         email: user.email ?? "",
@@ -116,7 +130,10 @@ export class DiscordProvider implements SocialProvider {
           ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
           : undefined,
       };
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        `Discord profile fetch failed: ${this.describe(error)}`,
+      );
       throw new SocialOAuthError("discord", "Discord profile fetch failed");
     }
   }
@@ -126,15 +143,18 @@ export class DiscordProvider implements SocialProvider {
     if (!gate.guildId) {
       return;
     }
-    this.rest.setToken(accessToken);
     try {
-      const guilds = (await this.rest.get(Routes.userGuilds())) as Array<{ id: string }>;
+      const guilds = (await this.api(
+        "users/@me/guilds",
+        accessToken,
+      )) as Array<{ id: string }>;
       if (!guilds.some((guild) => guild.id === gate.guildId)) {
         throw new SocialMembershipError("discord", gate.guildId);
       }
       if (gate.roleIds.length) {
-        const member = (await this.rest.get(
-          Routes.userGuildMember(gate.guildId),
+        const member = (await this.api(
+          `users/@me/guilds/${gate.guildId}/member`,
+          accessToken,
         )) as { roles?: string[] };
         const overlap = (member.roles ?? []).filter((role) =>
           gate.roleIds.includes(role),
@@ -147,22 +167,41 @@ export class DiscordProvider implements SocialProvider {
       if (error instanceof SocialMembershipError) {
         throw error;
       }
+      this.logger.warn(
+        `Discord membership check failed: ${this.describe(error)}`,
+      );
       throw new SocialOAuthError("discord", "Discord membership check failed");
     }
   }
 
-  private user(
-    data: RESTGetAPIOAuth2CurrentAuthorizationResult,
-  ): {
-    id: string;
-    username: string;
-    global_name?: string | null;
-    email?: string | null;
-    avatar?: string | null;
-  } {
-    if (!data.user) {
-      throw new SocialOAuthError("discord", "Discord did not return a user");
+  /** Authed GET against the Discord API using the user OAuth2 `Bearer` token. */
+  private async api(path: string, accessToken: string): Promise<unknown> {
+    const response = await fetch(`https://discord.com/api/v10/${path}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "User-Agent": "inft-auth/1.0",
+      },
+    });
+    if (!response.ok) {
+      throw new SocialOAuthError(
+        "discord",
+        `Discord API ${path} failed with ${response.status}`,
+      );
     }
-    return data.user;
+    return response.json();
+  }
+
+  private describe(error: unknown): string {
+    if (typeof error === "object" && error !== null) {
+      const { status, message, body } = error as Record<string, unknown>;
+      const detail =
+        typeof body === "string"
+          ? (body.slice(0, 200) as string)
+          : body
+            ? JSON.stringify(body).slice(0, 200)
+            : undefined;
+      return `${String(status ?? "")} ${detail ?? String(message ?? error)}`.trim();
+    }
+    return String(error);
   }
 }

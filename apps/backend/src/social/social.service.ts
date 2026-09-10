@@ -12,13 +12,14 @@
  * parameter.
  */
 
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { AuthProvider, Session } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
 import { SnowflakeGenerator } from "../common/snowflake.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { SessionService } from "../session/session.service.js";
 import { LldapService } from "../lldap/lldap.service.js";
+import { isEmailDomainAllowed } from "./domain.util.js";
 import { SOCIAL_PROVIDERS } from "./providers/provider.interface.js";
 import type { SocialProvider } from "./providers/provider.interface.js";
 import { OAuthStateService } from "./oauth-state.service.js";
@@ -40,6 +41,7 @@ export type SocialErrorCode =
   | "already_linked"
   | "membership_required"
   | "email_exists"
+  | "email_domain_not_allowed"
   | "verification_unavailable";
 
 /** Discriminated outcome of a callback handling run. */
@@ -56,6 +58,7 @@ export type SocialVerifyOutcome =
 
 @Injectable()
 export class SocialService {
+  private readonly logger = new Logger(SocialService.name);
   private readonly snowflake: SnowflakeGenerator;
 
   constructor(
@@ -110,9 +113,15 @@ export class SocialService {
     const impl = this.providerOf(provider);
     const payload = this.oauthState.verify(rawStateCookie, query.state ?? "");
     if (!payload) {
+      this.logger.warn(
+        `Social callback rejected: invalid state (provider=${provider})`,
+      );
       return { kind: "error", code: "invalid_state" };
     }
     if (query.error || !query.code) {
+      this.logger.warn(
+        `Social callback rejected: no code (provider=${provider}, error=${query.error ?? "none"})`,
+      );
       return { kind: "error", code: "provider_error" };
     }
 
@@ -128,6 +137,9 @@ export class SocialService {
       profile = await impl.fetchProfile(accessToken);
     } catch (error) {
       if (error instanceof SocialOAuthError) {
+        this.logger.warn(
+          `Social OAuth failed for ${provider}: ${error.message}`,
+        );
         return { kind: "error", code: "provider_error" };
       }
       throw error;
@@ -277,9 +289,19 @@ export class SocialService {
     profile: SocialProfile,
   ): Promise<SocialCallbackOutcome> {
     if (!profile.email) {
+      this.logger.warn(
+        `Social sign-up aborted: provider ${provider} returned no verified email`,
+      );
       return { kind: "error", code: "provider_error" };
     }
     const lower = profile.email.toLowerCase();
+
+    if (!isEmailDomainAllowed(lower, this.config.allowedDomains)) {
+      this.logger.warn(
+        `Social sign-up rejected: email domain not allowed (provider=${provider}, email=${lower})`,
+      );
+      return { kind: "error", code: "email_domain_not_allowed" };
+    }
 
     const lldapCollision = await this.lldap.resolveUidByEmail(lower);
     if (lldapCollision) {
@@ -305,40 +327,35 @@ export class SocialService {
       },
     });
 
-    try {
-      const sent = await this.verification.send(account.id);
-      if (!sent.ok) {
-        return { kind: "error", code: "provider_error" };
-      }
-      return {
-        kind: "verification",
-        accountId: account.id,
-        email: account.email,
-      };
-    } catch (error) {
-      if (error instanceof MailNotConfiguredError) {
+    const sent = await this.verification.send(account.id);
+    if (!sent.ok) {
+      if (sent.reason === "mail_failed") {
         return { kind: "error", code: "verification_unavailable" };
       }
-      throw error;
+      return { kind: "error", code: "provider_error" };
     }
+    return {
+      kind: "verification",
+      accountId: account.id,
+      email: account.email,
+    };
   }
 
   private async resumeVerification(
     accountId: string,
     email: string,
   ): Promise<SocialCallbackOutcome> {
-    try {
-      const sent = await this.verification.send(accountId);
-      if (!sent.ok) {
-        return { kind: "error", code: "provider_error" };
-      }
-      return { kind: "verification", accountId, email };
-    } catch (error) {
-      if (error instanceof MailNotConfiguredError) {
+    const sent = await this.verification.send(accountId);
+    if (!sent.ok) {
+      if (sent.reason === "mail_failed") {
         return { kind: "error", code: "verification_unavailable" };
       }
-      throw error;
+      if (sent.reason === "already_verified") {
+        return { kind: "verification", accountId, email };
+      }
+      return { kind: "error", code: "provider_error" };
     }
+    return { kind: "verification", accountId, email };
   }
 
   /**
@@ -353,6 +370,12 @@ export class SocialService {
     });
     if (!account || !account.verified) {
       return { ok: false, reason: "account_not_found" };
+    }
+    if (!isEmailDomainAllowed(account.userId, this.config.allowedDomains)) {
+      this.logger.warn(
+        `Social finalize rejected: email domain not allowed (account=${account.id})`,
+      );
+      return { ok: false, reason: "invalid_input" };
     }
     const lldapUid = await this.lldap.resolveUidByEmail(account.userId);
     if (!lldapUid) {

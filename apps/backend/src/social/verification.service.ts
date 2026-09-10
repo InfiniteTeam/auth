@@ -8,7 +8,7 @@
  */
 
 import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { MailService } from "./mail.service.js";
@@ -20,10 +20,15 @@ import type {
 /** Result of (re)sending the verification email. */
 export type VerificationSendResult =
   | { ok: true; email: string }
-  | { ok: false; reason: "account_not_found" | "already_verified" };
+  | {
+      ok: false;
+      reason: "account_not_found" | "already_verified" | "mail_failed";
+    };
 
 @Injectable()
 export class VerificationService {
+  private readonly logger = new Logger(VerificationService.name);
+
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly prisma: PrismaService,
@@ -64,7 +69,14 @@ export class VerificationService {
     });
 
     const link = `${this.config.socialRedirectBaseUrl}/api/v1/auth/social/verify/link?accountId=${encodeURIComponent(accountId)}&token=${token}`;
-    await this.mail.sendVerificationEmail({ to: account.email, code, link });
+    try {
+      await this.mail.sendVerificationEmail({ to: account.email, code, link });
+    } catch (error) {
+      this.logger.error(
+        `Failed to deliver verification email for account ${accountId}: ${this.errorMessage(error)}`,
+      );
+      return { ok: false, reason: "mail_failed" };
+    }
     return { ok: true, email: account.email };
   }
 
@@ -173,6 +185,10 @@ export class VerificationService {
 
   private sha256(value: string): string {
     return createHash("sha256").update(value).digest("hex");
+  }
+
+  private errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
   }
 
   private constantTimeEqual(a: string, b: string): boolean {

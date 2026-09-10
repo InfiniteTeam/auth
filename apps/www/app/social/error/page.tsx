@@ -18,6 +18,7 @@ const ERROR_MESSAGE: Record<string, string> = {
   already_linked: '이 소셜 계정은 이미 다른 inft 계정에 연결되어 있습니다.',
   membership_required: '이 기능은 승인된 조직 또는 서버 구성원만 사용할 수 있습니다.',
   email_exists: '이미 같은 이메일로 가입된 계정이 있습니다. LDAP 로그인을 이용해 주세요.',
+  email_domain_not_allowed: '허용되지 않은 이메일 도메인입니다. inft.kr 이메일로 가입해 주세요.',
   verification_unavailable: '이메일 인증 서비스가 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.',
 };
 

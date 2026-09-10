@@ -99,7 +99,8 @@ describe("OAuthStateService", () => {
       secure: false,
       sameSite: "lax",
       path: "/",
-      maxAge: 600,
+      // Express `res.cookie` treats `maxAge` as milliseconds.
+      maxAge: config.oauthStateTtlMs,
     });
     const prodService = createService({ nodeEnv: "production" });
     expect(prodService.cookieOptions.secure).toBe(true);

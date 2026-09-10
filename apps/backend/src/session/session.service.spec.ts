@@ -39,6 +39,11 @@ describe("SessionService", () => {
     expect(res.session.user.userId).toBe("devuser");
   });
 
+  it("exposes cookie options with maxAge in milliseconds for Express", async () => {
+    const { service } = createService();
+    expect(service.cookieOptions.maxAge).toBe(SESSION_COOKIE.maxAge * 1000);
+  });
+
   it("returns null when the cookie is malformed", async () => {
     const { service } = createService();
     await expect(

@@ -63,17 +63,27 @@ export class SocialSettingsService {
 
   /**
    * Resolves the effective OAuth credentials for a provider, applying any
-   * `PlatformSetting` override. Throws when the provider is not configured.
+   * `PlatformSetting` override. Falls back to the environment defaults unless
+   * an explicit row overrides them. Throws when neither source has a value.
    */
   async getProviderOauth(provider: SocialProviderId): Promise<ProviderOauthConfig> {
     const [clientId, clientSecret] = await Promise.all([
       this.read(KEYS[provider].clientId),
       this.read(KEYS[provider].clientSecret),
     ]);
-    if (typeof clientId !== "string" || typeof clientSecret !== "string") {
+    const envClientId = this.envClientId(provider);
+    const envClientSecret = this.envClientSecret(provider);
+    const effectiveClientId =
+      typeof clientId === "string" ? clientId : envClientId;
+    const effectiveClientSecret =
+      typeof clientSecret === "string" ? clientSecret : envClientSecret;
+    if (
+      typeof effectiveClientId !== "string" ||
+      typeof effectiveClientSecret !== "string"
+    ) {
       throw new SocialConfigurationError(provider);
     }
-    return { clientId, clientSecret };
+    return { clientId: effectiveClientId, clientSecret: effectiveClientSecret };
   }
 
   /**
@@ -87,11 +97,7 @@ export class SocialSettingsService {
       this.read(KEYS[provider].clientSecret),
     ]);
     const envEnabled =
-      Boolean(
-        provider === "github"
-          ? this.config.githubClientId && this.config.githubClientSecret
-          : this.config.discordClientId && this.config.discordClientSecret,
-      ) ||
+      Boolean(this.envClientId(provider) && this.envClientSecret(provider)) ||
       (typeof clientId === "string" && typeof clientSecret === "string");
     return typeof override === "boolean" ? override : envEnabled;
   }
@@ -123,5 +129,17 @@ export class SocialSettingsService {
   private async read(key: string): Promise<unknown> {
     const row = await this.prisma.platformSetting.findUnique({ where: { key } });
     return row?.value ?? undefined;
+  }
+
+  private envClientId(provider: SocialProviderId): string | undefined {
+    return provider === "github"
+      ? this.config.githubClientId
+      : this.config.discordClientId;
+  }
+
+  private envClientSecret(provider: SocialProviderId): string | undefined {
+    return provider === "github"
+      ? this.config.githubClientSecret
+      : this.config.discordClientSecret;
   }
 }

@@ -126,7 +126,8 @@ export class OAuthStateService {
       secure: this.config.nodeEnv === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: Math.ceil(this.config.oauthStateTtlMs / 1000),
+      // Express `res.cookie` interprets `maxAge` in milliseconds.
+      maxAge: this.config.oauthStateTtlMs,
     };
   }
 

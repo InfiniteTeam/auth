@@ -123,29 +123,31 @@ export class AuthApiClient implements AuthClient {
   async loginSocial(provider: "github" | "discord"): Promise<void> {
     const doFetch = this.options.fetch ?? fetch;
     const res = await doFetch(`${this.baseUrl}/api/v1/auth/social/${provider}`, {
+      method: "POST",
       credentials: "include",
       redirect: "manual",
     });
 
     const currentWindow = typeof window !== "undefined" ? window : undefined;
 
-    // Browsers expose manual redirects as opaque responses; navigate to the
-    // provider page to continue the flow.
-    if (res.type === "opaqueredirect") {
-      currentWindow?.location.assign(res.url);
+    // The start endpoint answers with `{ authorizationUrl }`. Navigating to it
+    // (rather than following a redirect) keeps the flow working in browsers:
+    // with `redirect: "manual"`, an opaque-redirect response hides the Location
+    // header and reports the *original* request URL.
+    const body = (await res.json()) as { authorizationUrl?: unknown };
+    if (typeof body.authorizationUrl === "string") {
+      currentWindow?.location.assign(body.authorizationUrl);
       return;
     }
 
-    // Server-side fetchers (e.g. undici) expose the redirect in headers.
+    // Server-side fetchers (e.g. undici) may still expose a redirect header.
     const redirectUrl = res.headers.get("location");
     if (redirectUrl) {
       currentWindow?.location.assign(redirectUrl);
       return;
     }
 
-    if (res.status !== 200) {
-      throw new AuthApiError("Unable to start the social sign-in flow.", res.status, "social_failed");
-    }
+    throw new AuthApiError("Unable to start the social sign-in flow.", res.status, "social_failed");
   }
 
   /** @inheritDoc */

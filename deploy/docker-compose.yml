@@ -104,6 +104,7 @@ services:
       VERIFY_CODE_TTL_MS: ${VERIFY_CODE_TTL_MS:-600000}
       VERIFY_TOKEN_TTL_MS: ${VERIFY_TOKEN_TTL_MS:-86400000}
       VERIFY_MAX_ATTEMPTS: ${VERIFY_MAX_ATTEMPTS:-5}
+      ALLOWED_DOMAINS: ${ALLOWED_DOMAINS}
     volumes:
       - backend_data:/app/data
     depends_on:
