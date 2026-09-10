@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Infinite Studio SSO',
   description: 'Infinite Studio 서비스 통합 인증',
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: '/favicon.ico' },
 };
 
 export const dynamic = 'force-dynamic';
