@@ -14,9 +14,10 @@ import { LldapModule } from "../lldap/lldap.module.js";
 import { SessionModule } from "../session/session.module.js";
 import { createProvider } from "./provider.factory.js";
 import { OidcInteractionController } from "./oidc-interaction.controller.js";
+import { OIDC_PROVIDER } from "./oidc-tokens.js";
 
-/** Injection token for the shared OIDC {@link Provider}. */
-export const OIDC_PROVIDER = Symbol("OIDC_PROVIDER");
+/** Re-exported for backwards compatibility; prefer `./oidc-tokens.js`. */
+export { OIDC_PROVIDER };
 
 @Global()
 @Module({
