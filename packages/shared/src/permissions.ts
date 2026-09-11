@@ -20,6 +20,22 @@ export const PermissionFlags = {
   OidcClientCreate: 1n << 1n,
   /** May delete (revoke) registered OIDC clients. */
   OidcClientDelete: 1n << 2n,
+  /** May read (list) directory users. */
+  UserRead: 1n << 3n,
+  /** May create, update and delete directory users. */
+  UserWrite: 1n << 4n,
+  /** May read (list) directory groups. */
+  GroupRead: 1n << 5n,
+  /** May create, update and delete directory groups and memberships. */
+  GroupWrite: 1n << 6n,
+  /** May read (list) active sessions. */
+  SessionRead: 1n << 7n,
+  /** May revoke sessions of other users. */
+  SessionRevoke: 1n << 8n,
+  /** May read platform settings and environment overrides. */
+  SettingsRead: 1n << 9n,
+  /** May write platform settings and environment overrides. */
+  SettingsWrite: 1n << 10n,
 } as const;
 
 /** A permission flag name, e.g. `"OidcClientRead"`. */

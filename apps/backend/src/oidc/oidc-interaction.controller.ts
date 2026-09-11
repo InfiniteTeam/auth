@@ -21,7 +21,7 @@ import Provider, { errors as providerErrors } from "oidc-provider";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
 import { readSessionCookie } from "../session/session.guard.js";
 import { SessionService } from "../session/session.service.js";
-import { OIDC_PROVIDER } from "./oidc.module.js";
+import { OIDC_PROVIDER } from "./oidc-tokens.js";
 import { OIDC_INTERACTION_ROUTE } from "./oidc-routes.js";
 
 /** Decision query parameter supplied by the www consent page. */

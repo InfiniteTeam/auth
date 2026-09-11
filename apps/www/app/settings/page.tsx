@@ -37,6 +37,14 @@ import {
   deleteClient,
   listClients,
 } from '@/lib/admin';
+import {
+  changePassword,
+  confirmEmailChange,
+  listLinkedSocials,
+  requestEmailChange,
+  unlinkSocial,
+  type LinkedSocial,
+} from '@/lib/account';
 import { BACKEND_URL } from '@/lib/auth';
 
 const GRANT_TYPES = ['authorization_code', 'refresh_token', 'implicit', 'client_credentials'] as const;
@@ -160,10 +168,217 @@ function AccountTab({
         </div>
       </div>
       <SocialConnect />
+      <SocialManage />
+      <PasswordCard isLdap={session.user.provider === 'ldap'} />
+      <EmailChangeCard currentEmail={session.user.email} />
       <Button size="lg" variant="destructive" disabled={signingOut} onClick={onSignOut}>
         {signingOut ? '로그아웃 중…' : '로그아웃'}
       </Button>
     </div>
+  );
+}
+
+function SocialManage() {
+  const [linked, setLinked] = useState<LinkedSocial[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    listLinkedSocials()
+      .then((list) => {
+        if (!cancelled) setLinked(list);
+      })
+      .catch(() => {
+        if (!cancelled) setError('연결된 소셜 계정을 불러오지 못했습니다.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const onUnlink = useCallback(async (provider: string) => {
+    if (!window.confirm(`${provider} 연결을 해제할까요?`)) {
+      return;
+    }
+    try {
+      await unlinkSocial(provider);
+      setLinked((prev) => prev.filter((s) => s.provider !== provider));
+      setError(null);
+    } catch {
+      setError('소셜 연결 해제에 실패했습니다. 마지막 로그인 수단은 해제할 수 없습니다.');
+    }
+  }, []);
+
+  if (linked.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="profile-card flex flex-col gap-3">
+      <div>
+        <p>연결된 소셜 계정</p>
+        <p className="mt-1">연결을 해제하면 해당 소셜 계정으로 로그인할 수 없습니다.</p>
+      </div>
+      {error ? (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+      <ul className="flex flex-col gap-2">
+        {linked.map((s) => (
+          <li key={s.provider} className="flex items-center justify-between gap-2 text-sm">
+            <span>
+              {s.provider} · {s.email}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => onUnlink(s.provider)}>
+              해제
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PasswordCard({ isLdap }: { isLdap: boolean }) {
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  const onSubmit = useCallback(async () => {
+    if (next.length < 8) {
+      setMessage('새 비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+    if (next !== confirm) {
+      setMessage('새 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    setPending(true);
+    try {
+      await changePassword({ currentPassword: current || undefined, newPassword: next });
+      setMessage(isLdap ? '비밀번호가 변경되었습니다.' : '비밀번호가 설정되었습니다.');
+      setCurrent('');
+      setNext('');
+      setConfirm('');
+    } catch {
+      setMessage('비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해 주세요.');
+    } finally {
+      setPending(false);
+    }
+  }, [confirm, current, isLdap, next]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{isLdap ? '비밀번호 변경' : '비밀번호 설정'}</CardTitle>
+        <CardDescription>
+          {isLdap
+            ? '현재 비밀번호를 확인한 뒤 새 비밀번호로 변경합니다.'
+            : '소셜 계정으로 가입되어 비밀번호가 없습니다. 설정하면 이메일+비밀번호로도 로그인할 수 있습니다.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {isLdap ? (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="pw-current">현재 비밀번호</Label>
+            <Input id="pw-current" type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
+          </div>
+        ) : null}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="pw-next">새 비밀번호 (8자 이상)</Label>
+          <Input id="pw-next" type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="pw-confirm">새 비밀번호 확인</Label>
+          <Input id="pw-confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+        </div>
+        {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      </CardContent>
+      <CardFooter>
+        <Button size="sm" disabled={pending} onClick={onSubmit}>
+          {pending ? '처리 중…' : isLdap ? '비밀번호 변경' : '비밀번호 설정'}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function EmailChangeCard({ currentEmail }: { currentEmail: string }) {
+  const [step, setStep] = useState<'idle' | 'sent'>('idle');
+  const [newEmail, setNewEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>이메일 변경</CardTitle>
+        <CardDescription>
+          현재 {currentEmail}. 새 주소로 확인 코드를 보내고, 확인되면 계정 ID가 함께 이전됩니다. 다른 세션은
+          모두 로그아웃됩니다.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email-new">새 이메일</Label>
+          <Input id="email-new" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} disabled={step === 'sent'} />
+        </div>
+        {step === 'sent' ? (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="email-code">확인 코드 (6자리)</Label>
+            <Input id="email-code" value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} inputMode="numeric" />
+          </div>
+        ) : null}
+        {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+      </CardContent>
+      <CardFooter className="flex gap-2">
+        {step === 'idle' ? (
+          <Button
+            size="sm"
+            disabled={pending || !newEmail.trim()}
+            onClick={async () => {
+              setPending(true);
+              try {
+                await requestEmailChange(newEmail.trim());
+                setStep('sent');
+                setMessage('새 주소로 확인 코드를 보냈습니다.');
+              } catch {
+                setMessage('요청에 실패했습니다. 주소를 확인해 주세요.');
+              } finally {
+                setPending(false);
+              }
+            }}
+          >
+            확인 코드 보내기
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            disabled={pending || code.length !== 6}
+            onClick={async () => {
+              setPending(true);
+              try {
+                const result = await confirmEmailChange(code);
+                setMessage(`이메일이 ${result.email}(으)로 변경되었습니다. 다시 로그인해 주세요.`);
+                window.setTimeout(() => {
+                  window.location.href = '/logout';
+                }, 2000);
+              } catch {
+                setMessage('확인에 실패했습니다. 코드를 확인해 주세요.');
+              } finally {
+                setPending(false);
+              }
+            }}
+          >
+            확인 후 변경
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -520,6 +735,20 @@ function SettingsPage() {
     () => Boolean(session && hasPermissions(session.user.permissions, PermissionFlags.OidcClientRead)),
     [session],
   );
+  const isAdmin = useMemo(
+    () =>
+      Boolean(
+        session &&
+          hasPermissions(session.user.permissions, [
+            PermissionFlags.OidcClientRead,
+            PermissionFlags.UserRead,
+            PermissionFlags.GroupRead,
+            PermissionFlags.SessionRead,
+            PermissionFlags.SettingsRead,
+          ]),
+      ),
+    [session],
+  );
   const canCreateClients = useMemo(
     () => Boolean(session && hasPermissions(session.user.permissions, PermissionFlags.OidcClientCreate)),
     [session],
@@ -594,6 +823,15 @@ function SettingsPage() {
       </div>
 
       <ConnectedNotice />
+
+      {isAdmin ? (
+        <Alert className="mb-4">
+          <AlertTitle>관리자</AlertTitle>
+          <AlertDescription>
+            <Link href="/admin">어드민 패널로 이동</Link>해 클라이언트·사용자·세션·환경 설정을 관리할 수 있습니다.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {activeTab === 'account' ? (
         <AccountTab session={session} signingOut={signingOut} onSignOut={onSignOut} />

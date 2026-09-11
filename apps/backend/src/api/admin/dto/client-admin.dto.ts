@@ -76,6 +76,25 @@ export class CreateOidcClientDto {
 }
 
 /**
+ * Payload for `PATCH /api/v1/admin/clients/:clientId` — update redirect URIs
+ * and display metadata.
+ */
+export class UpdateOidcClientDto {
+  /** Human-readable client name shown on the consent screen. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  clientName?: string;
+
+  /** Allowed redirect URIs; at least one is required when provided. */
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUrl({ require_tld: false }, { each: true })
+  redirectUris?: string[];
+}
+
+/**
  * A registered OIDC client as returned by the admin API.
  */
 export class OidcClientDto {

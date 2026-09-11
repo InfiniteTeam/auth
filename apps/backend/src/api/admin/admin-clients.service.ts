@@ -91,6 +91,65 @@ export class AdminClientsService {
   }
 
   /**
+   * Rotates a client secret. The new secret is returned once.
+   *
+   * @param clientId - The client identifier to rotate.
+   */
+  async rotate(clientId: string): Promise<CreateOidcClientResponseDto> {
+    const existing = await this.prisma.oidcClient.findUnique({
+      where: { clientId },
+    });
+    if (!existing) {
+      throw new BadRequestException(`Unknown client "${clientId}"`);
+    }
+    const clientSecret = randomBytes(32)
+      .toString("base64url")
+      .slice(0, 64);
+    const payload = (existing.metadata ?? {}) as Record<string, unknown>;
+    const metadata = { ...payload, client_secret: clientSecret } as unknown as Record<string, never>;
+    const row = await this.prisma.oidcClient.update({
+      where: { clientId },
+      data: { clientSecret, metadata },
+    });
+    return { ...this.toDto(row), clientSecret };
+  }
+
+  /**
+   * Updates redirect URIs and display metadata of a client.
+   */
+  async update(
+    clientId: string,
+    input: { redirectUris?: string[]; clientName?: string },
+  ): Promise<OidcClientDto> {
+    const existing = await this.prisma.oidcClient.findUnique({
+      where: { clientId },
+    });
+    if (!existing) {
+      throw new BadRequestException(`Unknown client "${clientId}"`);
+    }
+    const payload = (existing.metadata ?? {}) as Record<string, unknown>;
+    const metadata: Record<string, unknown> = { ...payload };
+    if (input.redirectUris !== undefined) {
+      metadata.redirect_uris = input.redirectUris;
+    }
+    if (input.clientName !== undefined) {
+      if (input.clientName) {
+        metadata.client_name = input.clientName;
+      } else {
+        delete metadata.client_name;
+      }
+    }
+    const row = await this.prisma.oidcClient.update({
+      where: { clientId },
+      data: {
+        ...(input.redirectUris !== undefined ? { redirectUris: input.redirectUris } : {}),
+        metadata: metadata as unknown as Record<string, never>,
+      },
+    });
+    return this.toDto(row);
+  }
+
+  /**
    * Deletes a registered OIDC client. The built-in Tailscale seed client cannot
    * be deleted.
    *

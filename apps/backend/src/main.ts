@@ -14,7 +14,7 @@ import cookieParser from "cookie-parser";
 import type { NextFunction, Request, Response } from "express";
 import Provider from "oidc-provider";
 import { AppModule } from "./app.module.js";
-import { OIDC_PROVIDER } from "./oidc/oidc.module.js";
+import { OIDC_PROVIDER } from "./oidc/oidc-tokens.js";
 import { isOidcRoute, OIDC_INTERACTION_ROUTE } from "./oidc/oidc-routes.js";
 
 async function bootstrap(): Promise<void> {

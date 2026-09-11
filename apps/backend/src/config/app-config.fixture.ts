@@ -21,6 +21,8 @@ export function appConfigFixture(
     tailscaleClientSecret: "test-client-secret",
     databaseUrl: "postgresql://auth:auth@localhost:5432/auth",
     lldapUrl: "http://localhost:17170",
+    lldapLdapUrl: "ldap://localhost:3890",
+    lldapBaseDn: "dc=inft,dc=kr",
     lldapAdminDn: "admin",
     lldapAdminPassword: "test",
     lldapAdminGroupName: "admins",

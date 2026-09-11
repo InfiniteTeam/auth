@@ -22,6 +22,10 @@ export interface AppConfig {
   databaseUrl: string;
   /** Base URL of the lldap service. */
   lldapUrl: string;
+  /** LDAP URL of the lldap service (password modify operations). */
+  lldapLdapUrl: string;
+  /** LDAP base DN (e.g. `dc=inft,dc=kr`). */
+  lldapBaseDn: string;
   /** lldap service-account DN used for GraphQL queries. */
   lldapAdminDn: string;
   /** lldap service-account password. */
@@ -109,6 +113,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     ),
     databaseUrl: required("DATABASE_URL", env.DATABASE_URL),
     lldapUrl: required("LLDAP_URL", env.LLDAP_URL),
+    lldapLdapUrl: env.LLDAP_LDAP_URL ?? "ldap://localhost:3890",
+    lldapBaseDn: env.LLDAP_BASE_DN ?? "dc=inft,dc=kr",
     lldapAdminDn: required("LLDAP_ADMIN_DN", env.LLDAP_ADMIN_DN),
     lldapAdminPassword: required(
       "LLDAP_ADMIN_PASSWORD",
