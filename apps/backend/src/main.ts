@@ -15,7 +15,7 @@ import type { NextFunction, Request, Response } from "express";
 import Provider from "oidc-provider";
 import { AppModule } from "./app.module.js";
 import { OIDC_PROVIDER } from "./oidc/oidc-tokens.js";
-import { isOidcRoute, OIDC_INTERACTION_ROUTE } from "./oidc/oidc-routes.js";
+import { isOidcRoute, OIDC_INTERACTION_ROUTE, stripUnsupportedPrompt } from "./oidc/oidc-routes.js";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -50,13 +50,16 @@ async function bootstrap(): Promise<void> {
     ) => unknown;
   };
   // oidc-provider's callback follows (req, res) and responds on its own; it is
-  // only invoked for oidc-provider-owned routes.
+  // only invoked for oidc-provider-owned routes. Unsupported `prompt` values
+  // (e.g. `select_account` sent by Tailscale) are stripped beforehand because
+  // the provider rejects them with `invalid_request` before any interaction.
   const oidcCallback = provider.callback() as (
     req: Request,
     res: Response,
   ) => void;
   express.use((req, res, next) => {
     if (req.path !== OIDC_INTERACTION_ROUTE && isOidcRoute(req.path)) {
+      req.url = stripUnsupportedPrompt(req.url);
       oidcCallback(req, res);
       return;
     }
