@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AuthApiError } from '@inftkr/auth-core';
-import { useSession, useSignIn } from '@inftkr/auth-core/react';
+import { useSignIn } from '@inftkr/auth-core/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
@@ -32,17 +32,7 @@ function LoginForm() {
   const [socialPending, setSocialPending] = useState<SocialProvider | null>(null);
 
   const returnTo = searchParams.get('return_to');
-  const { session, isLoading: sessionLoading } = useSession({ baseUrl: BACKEND_URL });
-
-  // Already signed in (e.g. restarted interaction, second visit): skip the
-  // form and continue where the flow left off instead of stranding the user
-  // on the account home.
-  useEffect(() => {
-    if (!sessionLoading && session) {
-      const target = returnTo?.startsWith('/') ? returnTo : '/';
-      window.location.href = target;
-    }
-  }, [returnTo, session, sessionLoading]);
+  const expired = searchParams.get('expired') === '1';
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -84,77 +74,76 @@ function LoginForm() {
 
   return (
     <AuthShell requestLabel="로그인 요청" requestName="Infinite Studio 계정">
-      {sessionLoading || session ? (
-        <div className="flow-loading" role="status">
-          <span className="spinner" />
-          {session ? '이동 중입니다.' : '계정 정보를 확인하는 중입니다.'}
-        </div>
-      ) : (
-        <>
-          <div className="card-heading">
-            <p>다시 만나 반가워요</p>
-            <h1>계정에 로그인</h1>
-            <span>Infinite Studio 계정으로 계속합니다.</span>
-          </div>
+      <div className="card-heading">
+        <p>다시 만나 반가워요</p>
+        <h1>계정에 로그인</h1>
+        <span>Infinite Studio 계정으로 계속합니다.</span>
+      </div>
 
-          {error ? (
-            <Alert variant="destructive" className="mt-6">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+      {expired ? (
+        <Alert className="mt-6">
+          <AlertDescription>
+            인증 요청이 만료되었습니다. Tailscale에서 로그인을 처음부터 다시 시작해 주세요.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {error ? (
+        <Alert variant="destructive" className="mt-6">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <form onSubmit={form.handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email">이메일</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@inftkr.kr"
+            className="h-11"
+            {...form.register('email')}
+          />
+          {form.formState.errors.email ? (
+            <p className="text-sm text-destructive" role="alert">
+              {form.formState.errors.email.message}
+            </p>
           ) : null}
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="password">비밀번호</Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            className="h-11"
+            {...form.register('password')}
+          />
+          {form.formState.errors.password ? (
+            <p className="text-sm text-destructive" role="alert">
+              {form.formState.errors.password.message}
+            </p>
+          ) : null}
+        </div>
+        <Button type="submit" size="lg" disabled={isLoading || form.formState.isSubmitting}>
+          {isLoading ? '로그인 중…' : '로그인'}
+        </Button>
+      </form>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email">이메일</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@inftkr.kr"
-                className="h-11"
-                {...form.register('email')}
-              />
-              {form.formState.errors.email ? (
-                <p className="text-sm text-destructive" role="alert">
-                  {form.formState.errors.email.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="password">비밀번호</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className="h-11"
-                {...form.register('password')}
-              />
-              {form.formState.errors.password ? (
-                <p className="text-sm text-destructive" role="alert">
-                  {form.formState.errors.password.message}
-                </p>
-              ) : null}
-            </div>
-            <Button type="submit" size="lg" disabled={isLoading || form.formState.isSubmitting}>
-              {isLoading ? '로그인 중…' : '로그인'}
-            </Button>
-          </form>
+      <div className="mt-6 flex flex-col gap-3">
+        <Button variant="outline" size="lg" disabled={!!socialPending} onClick={() => onSocial('github')}>
+          {socialPending === 'github' ? 'GitHub 연결 중…' : 'GitHub로 계속하기'}
+        </Button>
+        <Button variant="outline" size="lg" disabled={!!socialPending} onClick={() => onSocial('discord')}>
+          {socialPending === 'discord' ? 'Discord 연결 중…' : 'Discord로 계속하기'}
+        </Button>
+      </div>
 
-          <div className="mt-6 flex flex-col gap-3">
-            <Button variant="outline" size="lg" disabled={!!socialPending} onClick={() => onSocial('github')}>
-              {socialPending === 'github' ? 'GitHub 연결 중…' : 'GitHub로 계속하기'}
-            </Button>
-            <Button variant="outline" size="lg" disabled={!!socialPending} onClick={() => onSocial('discord')}>
-              {socialPending === 'discord' ? 'Discord 연결 중…' : 'Discord로 계속하기'}
-            </Button>
-          </div>
-
-          <p className="account-note">
-            계정이 없으신가요? <Link href="/signup">계정 만들기</Link>
-          </p>
-        </>
-      )}
+      <p className="account-note">
+        계정이 없으신가요? <Link href="/signup">계정 만들기</Link>
+      </p>
     </AuthShell>
   );
 }

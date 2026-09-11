@@ -61,10 +61,14 @@ export class OidcInteractionController {
       details = await this.provider.interactionDetails(req, res);
     } catch (error) {
       if (error instanceof providerErrors.SessionNotFound) {
-        // The `_interaction` cookie is missing or expired. Restart at login
-        // and come back: without `return_to` the user would land on the
-        // account home after signing in and the client flow would stall.
-        this.redirectToLogin(res);
+        // The `_interaction` cookie is missing or the record expired. This
+        // state is unrecoverable in this browser (logging in again cannot
+        // resurrect it), so send the user to a plain login with an expiry
+        // notice instead of `return_to`: bouncing back to `/interaction`
+        // would loop forever.
+        const loginUrl = new URL("/login", this.uiOrigin);
+        loginUrl.searchParams.set("expired", "1");
+        res.redirect(302, loginUrl.toString());
         return;
       }
       throw error;
