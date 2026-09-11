@@ -61,8 +61,10 @@ export class OidcInteractionController {
       details = await this.provider.interactionDetails(req, res);
     } catch (error) {
       if (error instanceof providerErrors.SessionNotFound) {
-        // The `_interaction` cookie is missing or expired; restart at login.
-        res.redirect(302, `${this.uiOrigin}/login`);
+        // The `_interaction` cookie is missing or expired. Restart at login
+        // and come back: without `return_to` the user would land on the
+        // account home after signing in and the client flow would stall.
+        this.redirectToLogin(res);
         return;
       }
       throw error;
@@ -86,9 +88,7 @@ export class OidcInteractionController {
     );
     if (!session) {
       // No portal session yet: send the user to the www login page and back.
-      const loginUrl = new URL("/login", this.uiOrigin);
-      loginUrl.searchParams.set("return_to", OIDC_INTERACTION_ROUTE);
-      res.redirect(302, loginUrl.toString());
+      this.redirectToLogin(res);
       return;
     }
     await this.provider.interactionFinished(
@@ -170,5 +170,12 @@ export class OidcInteractionController {
   /** Origin hosting the www UI. Same origin as the issuer in production. */
   private get uiOrigin(): string {
     return new URL("/", this.config.issuerUrl).origin;
+  }
+
+  /** Sends the browser to the www login page and back to the interaction. */
+  private redirectToLogin(res: Response): void {
+    const loginUrl = new URL("/login", this.uiOrigin);
+    loginUrl.searchParams.set("return_to", OIDC_INTERACTION_ROUTE);
+    res.redirect(302, loginUrl.toString());
   }
 }

@@ -219,7 +219,7 @@ describe("OidcInteractionController", () => {
     expect(provider.interactionFinished).not.toHaveBeenCalled();
     expect(res.redirected).toEqual({
       status: 302,
-      url: "http://localhost:3000/login",
+      url: "http://localhost:3000/login?return_to=%2Finteraction",
     });
   });
 });
