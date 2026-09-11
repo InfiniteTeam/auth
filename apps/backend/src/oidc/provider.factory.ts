@@ -126,5 +126,13 @@ export function createProvider(
     },
   };
 
-  return new Provider(config.issuerUrl || OIDC_ISSUER, configuration);
+  const provider = new Provider(config.issuerUrl || OIDC_ISSUER, configuration);
+  // The backend serves plain HTTP behind the Cloudflare Tunnel, which
+  // forwards the edge scheme via `X-Forwarded-Proto`. Without proxy awareness
+  // Koa reports `http`, so the discovery document would advertise `http://`
+  // endpoint URLs while the issuer itself is `https://`. Strict consumers
+  // (e.g. Tailscale's egress proxy, which only allows TLS) then refuse the
+  // token request because the advertised `token_endpoint` is plain HTTP.
+  provider.proxy = true;
+  return provider;
 }
