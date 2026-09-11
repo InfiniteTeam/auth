@@ -12,6 +12,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from "@nestjs/common";
@@ -24,6 +25,7 @@ import {
   CreateOidcClientResponseDto,
   OidcClientDto,
   OidcClientListDto,
+  UpdateOidcClientDto,
 } from "./dto/client-admin.dto.js";
 
 @ApiTags("admin")
@@ -61,6 +63,32 @@ export class AdminClientsController {
   async list(): Promise<OidcClientListDto> {
     const clients = await this.adminClientsService.list();
     return { clients };
+  }
+
+  /**
+   * Rotates a client secret. The new secret is returned once.
+   */
+  @Post(":clientId/rotate")
+  @Permissions(PermissionFlags.OidcClientCreate)
+  @ApiOperation({ summary: "Rotate an OIDC client secret" })
+  @ApiResponse({
+    status: 201,
+    type: CreateOidcClientResponseDto,
+    description: "A new secret was issued (returned once)",
+  })
+  async rotate(@Param("clientId") clientId: string) {
+    return this.adminClientsService.rotate(clientId);
+  }
+
+  /**
+   * Updates redirect URIs and display metadata of a client.
+   */
+  @Patch(":clientId")
+  @Permissions(PermissionFlags.OidcClientCreate)
+  @ApiOperation({ summary: "Update an OIDC client" })
+  @ApiResponse({ status: 200, type: OidcClientDto })
+  async update(@Param("clientId") clientId: string, @Body() body: UpdateOidcClientDto) {
+    return this.adminClientsService.update(clientId, body);
   }
 
   /**

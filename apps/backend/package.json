@@ -32,6 +32,7 @@
     "discord-api-types": "^0.38.55",
     "dotenv": "^17.4.2",
     "jose": "^6.2.12",
+    "ldapts": "^9.0.0",
     "nodemailer": "^10.0.1",
     "oidc-provider": "^9.12.2",
     "pg": "^8.23.0",

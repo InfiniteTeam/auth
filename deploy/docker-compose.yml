@@ -82,6 +82,8 @@ services:
       TAILSCALE_CLIENT_SECRET: ${TAILSCALE_CLIENT_SECRET}
       DATABASE_URL: postgresql://${AUTH_DB_USER:-auth}:${AUTH_DB_PASSWORD}@postgres:5432/${AUTH_DB_NAME:-auth}
       LLDAP_URL: http://lldap:17170
+      LLDAP_LDAP_URL: ldap://lldap:3890
+      LLDAP_BASE_DN: "dc=${LLDAP_BASE_DC:-inft},dc=${LLDAP_BASE_DOMAIN:-kr}"
       LLDAP_ADMIN_DN: "${LLDAP_ADMIN_USERNAME:-admin}"
       LLDAP_ADMIN_PASSWORD: ${LLDAP_ADMIN_PASSWORD}
       ADMIN_GROUP_NAME: ${ADMIN_GROUP_NAME:-admins}

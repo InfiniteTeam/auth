@@ -47,6 +47,62 @@ export class LldapWriteError extends Error {
   }
 }
 
+/**
+ * Summary of a directory user for admin listing.
+ */
+export interface LldapAdminUser {
+  /** lldap uid. */
+  id: string;
+  /** Primary email address. */
+  email: string;
+  /** Display name. */
+  displayName: string;
+  /** Display names of groups the user belongs to. */
+  groups: string[];
+}
+
+/**
+ * Summary of a directory group for admin listing.
+ */
+export interface LldapAdminGroup {
+  /** lldap numeric group id. */
+  id: number;
+  /** Group display name. */
+  displayName: string;
+  /** Ids of member users. */
+  members: string[];
+}
+
+/** OID of the LDAP Password Modify extended operation (RFC 3062). */
+const PASSWORD_MODIFY_OID = "1.3.6.1.4.1.4203.1.11.1";
+
+/**
+ * BER-encodes a Password Modify request value:
+ * `PasswdModifyRequestValue ::= SEQUENCE { userIdentity [0] OCTET STRING
+ * OPTIONAL, oldPasswd [1] OCTET STRING OPTIONAL, newPasswd [2] OCTET STRING
+ * OPTIONAL }`.
+ */
+async function encodePasswordModify(
+  userIdentity?: string,
+  oldPassword?: string,
+  newPassword?: string,
+): Promise<Buffer> {
+  const { BerWriter } = await import("ldapts");
+  const writer = new BerWriter();
+  writer.startSequence();
+  if (userIdentity !== undefined) {
+    writer.writeString(userIdentity, 0x80);
+  }
+  if (oldPassword !== undefined) {
+    writer.writeString(oldPassword, 0x81);
+  }
+  if (newPassword !== undefined) {
+    writer.writeString(newPassword, 0x82);
+  }
+  writer.endSequence();
+  return writer.buffer;
+}
+
 @Injectable()
 export class LldapService {
   constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {}
@@ -206,6 +262,249 @@ export class LldapService {
   }
 
   /**
+   * Lists directory users through the GraphQL endpoint, with optional
+   * case-insensitive substring filtering over id/email/displayName.
+   */
+  async listUsers(
+    search?: string,
+    limit = 50,
+  ): Promise<LldapAdminUser[]> {
+    const jwt = await this.serviceToken();
+    if (!jwt) {
+      throw new LldapWriteError("Unable to reach the directory service");
+    }
+    const query = `query { users { id email displayName groups { displayName } } }`;
+    const res = await fetch(`${this.config.lldapUrl}/api/graphql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) {
+      throw new LldapWriteError("Unable to list directory users");
+    }
+    const data = (await res.json()) as {
+      data?: {
+        users?: {
+          id?: string;
+          email?: string;
+          displayName?: string | null;
+          groups?: { displayName?: string | null }[];
+        }[];
+      };
+      errors?: unknown[];
+    };
+    if (data.errors?.length) {
+      throw new LldapWriteError("Unable to list directory users");
+    }
+    const needle = search?.toLowerCase();
+    const users = (data.data?.users ?? [])
+      .map((u) => ({
+        id: u.id ?? "",
+        email: u.email ?? "",
+        displayName: u.displayName ?? u.email ?? u.id ?? "",
+        groups: (u.groups ?? [])
+          .map((g) => g.displayName)
+          .filter((g): g is string => Boolean(g)),
+      }))
+      .filter((u) => Boolean(u.id))
+      .filter((u) =>
+        needle
+          ? u.id.toLowerCase().includes(needle) ||
+            u.email.toLowerCase().includes(needle) ||
+            u.displayName.toLowerCase().includes(needle)
+          : true,
+      );
+    return users.slice(0, Math.max(1, Math.min(limit, 200)));
+  }
+
+  /**
+   * Lists directory groups with their member user ids.
+   */
+  async listGroups(): Promise<LldapAdminGroup[]> {
+    const jwt = await this.serviceToken();
+    if (!jwt) {
+      throw new LldapWriteError("Unable to reach the directory service");
+    }
+    const query = `query { groups { id displayName users { id } } }`;
+    const res = await fetch(`${this.config.lldapUrl}/api/graphql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) {
+      throw new LldapWriteError("Unable to list directory groups");
+    }
+    const data = (await res.json()) as {
+      data?: {
+        groups?: {
+          id?: number;
+          displayName?: string | null;
+          users?: { id?: string }[];
+        }[];
+      };
+      errors?: unknown[];
+    };
+    if (data.errors?.length) {
+      throw new LldapWriteError("Unable to list directory groups");
+    }
+    return (data.data?.groups ?? [])
+      .filter((g) => typeof g.id === "number" && Boolean(g.displayName))
+      .map((g) => ({
+        id: g.id as number,
+        displayName: g.displayName as string,
+        members: (g.users ?? [])
+          .map((u) => u.id)
+          .filter((id): id is string => Boolean(id)),
+      }));
+  }
+
+  /**
+   * Updates a directory user's email/displayName via GraphQL.
+   */
+  async updateUserAdmin(input: {
+    id: string;
+    email?: string;
+    displayName?: string;
+  }): Promise<void> {
+    const jwt = await this.serviceToken();
+    if (!jwt) {
+      throw new LldapWriteError();
+    }
+    const mutation = `mutation($user: UpdateUserInput!) { updateUser(user: $user) { ok } }`;
+    const user: Record<string, unknown> = { id: input.id };
+    if (input.email !== undefined) {
+      user.email = input.email;
+    }
+    if (input.displayName !== undefined) {
+      user.displayName = input.displayName;
+    }
+    const res = await fetch(`${this.config.lldapUrl}/api/graphql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({ query: mutation, variables: { user } }),
+    });
+    if (!res.ok) {
+      throw new LldapWriteError();
+    }
+    const body = (await res.json()) as { errors?: unknown[] };
+    if (body.errors?.length) {
+      throw new LldapWriteError();
+    }
+  }
+
+  /**
+   * Deletes a directory user via GraphQL.
+   */
+  async deleteUserAdmin(userId: string): Promise<void> {
+    await this.mutate(`mutation($userId: String!) { deleteUser(userId: $userId) { ok } }`, {
+      userId,
+    });
+  }
+
+  /**
+   * Creates a directory group via GraphQL and returns its numeric id.
+   */
+  async createGroupAdmin(displayName: string): Promise<number> {
+    const jwt = await this.serviceToken();
+    if (!jwt) {
+      throw new LldapWriteError();
+    }
+    const mutation = `mutation($name: String!) { createGroup(name: $name) { id } }`;
+    const res = await fetch(`${this.config.lldapUrl}/api/graphql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({ query: mutation, variables: { name: displayName } }),
+    });
+    if (!res.ok) {
+      throw new LldapWriteError();
+    }
+    const body = (await res.json()) as {
+      data?: { createGroup?: { id?: number } };
+      errors?: unknown[];
+    };
+    if (body.errors?.length || typeof body.data?.createGroup?.id !== "number") {
+      throw new LldapWriteError();
+    }
+    return body.data.createGroup.id;
+  }
+
+  /**
+   * Renames a directory group via GraphQL.
+   */
+  async updateGroupAdmin(groupId: number, displayName: string): Promise<void> {
+    await this.mutate(
+      `mutation($group: UpdateGroupInput!) { updateGroup(group: $group) { ok } }`,
+      { group: { id: groupId, displayName } },
+    );
+  }
+
+  /**
+   * Deletes a directory group via GraphQL.
+   */
+  async deleteGroupAdmin(groupId: number): Promise<void> {
+    await this.mutate(`mutation($groupId: Int!) { deleteGroup(groupId: $groupId) { ok } }`, {
+      groupId,
+    });
+  }
+
+  /**
+   * Adds a user to a group via GraphQL.
+   */
+  async addUserToGroup(userId: string, groupId: number): Promise<void> {
+    await this.mutate(
+      `mutation($userId: String!, $groupId: Int!) { addUserToGroup(userId: $userId, groupId: $groupId) { ok } }`,
+      { userId, groupId },
+    );
+  }
+
+  /**
+   * Removes a user from a group via GraphQL.
+   */
+  async removeUserFromGroup(userId: string, groupId: number): Promise<void> {
+    await this.mutate(
+      `mutation($userId: String!, $groupId: Int!) { removeUserFromGroup(userId: $userId, groupId: $groupId) { ok } }`,
+      { userId, groupId },
+    );
+  }
+
+  /**
+   * Executes a GraphQL mutation with the service-account token.
+   */
+  private async mutate(query: string, variables: Record<string, unknown>): Promise<void> {
+    const jwt = await this.serviceToken();
+    if (!jwt) {
+      throw new LldapWriteError();
+    }
+    const res = await fetch(`${this.config.lldapUrl}/api/graphql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+    if (!res.ok) {
+      throw new LldapWriteError();
+    }
+    const body = (await res.json()) as { errors?: unknown[] };
+    if (body.errors?.length) {
+      throw new LldapWriteError();
+    }
+  }
+
+  /**
    * Resolves a user's permission bitfield from lldap group membership.
    *
    * Members of the configured admin group receive every permission; everyone
@@ -247,6 +546,59 @@ export class LldapService {
     } catch {
       return "0";
     }
+  }
+
+  /**
+   * Changes a user's password via the LDAP Password Modify extended operation
+   * (RFC 3062, OID 1.3.6.1.4.1.4203.1.11.1), binding as the user. The current
+   * password acts as proof of ownership; no GraphQL password API exists.
+   */
+  async changePasswordAsUser(
+    uid: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const { Client } = await import("ldapts");
+    const client = new Client({ url: this.config.lldapLdapUrl });
+    try {
+      await client.bind(this.userDn(uid), currentPassword);
+      await client.exop(
+        PASSWORD_MODIFY_OID,
+        await encodePasswordModify(this.userDn(uid), currentPassword, newPassword),
+      );
+    } catch {
+      throw new LldapAuthenticationError("Password change failed");
+    } finally {
+      await client.unbind().catch(() => undefined);
+    }
+  }
+
+  /**
+   * Sets a user's password via the LDAP Password Modify extended operation,
+   * binding as the service-account admin. Used for social-only accounts with
+   * no LDAP password yet and for admin-initiated resets.
+   */
+  async setPasswordAsAdmin(uid: string, newPassword: string): Promise<void> {
+    const { Client } = await import("ldapts");
+    const client = new Client({ url: this.config.lldapLdapUrl });
+    try {
+      await client.bind(this.userDn(this.config.lldapAdminDn), this.config.lldapAdminPassword);
+      await client.exop(
+        PASSWORD_MODIFY_OID,
+        await encodePasswordModify(this.userDn(uid), undefined, newPassword),
+      );
+    } catch {
+      throw new LldapWriteError("Password reset failed");
+    } finally {
+      await client.unbind().catch(() => undefined);
+    }
+  }
+
+  /**
+   * Builds the LDAP distinguished name of a user.
+   */
+  private userDn(uid: string): string {
+    return `uid=${uid},ou=people,${this.config.lldapBaseDn}`;
   }
 
   /**
