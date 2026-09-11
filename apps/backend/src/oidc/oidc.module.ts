@@ -11,14 +11,17 @@ import { APP_CONFIG, type AppConfig } from "../config/config.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { LldapService } from "../lldap/lldap.service.js";
 import { LldapModule } from "../lldap/lldap.module.js";
+import { SessionModule } from "../session/session.module.js";
 import { createProvider } from "./provider.factory.js";
+import { OidcInteractionController } from "./oidc-interaction.controller.js";
 
 /** Injection token for the shared OIDC {@link Provider}. */
 export const OIDC_PROVIDER = Symbol("OIDC_PROVIDER");
 
 @Global()
 @Module({
-  imports: [LldapModule],
+  imports: [LldapModule, SessionModule],
+  controllers: [OidcInteractionController],
   providers: [
     {
       provide: OIDC_PROVIDER,

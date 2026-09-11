@@ -10,13 +10,29 @@ tunnel: __TUNNEL_ID__
 credentials-file: /etc/cloudflared/credentials.json
 
 # Route map:
-#   ${AUTH_DOMAIN}/oauth2/*, /.well-known/*, /api/*  -> backend (OIDC/API)
-#   ${ROOT_DOMAIN}/.well-known/webfinger             -> backend
-#   ${AUTH_DOMAIN}/*                                 -> www (frontend portal)
+#   ${AUTH_DOMAIN}/oauth2/*, /auth*, /interaction*, /token*, /userinfo*,
+#     /session*, /.well-known/*, /api/*  -> backend (OIDC/API)
+#   ${ROOT_DOMAIN}/.well-known/webfinger -> backend
+#   ${AUTH_DOMAIN}/*                     -> www (frontend portal)
 #
 # Order matters: cloudflared uses the first matching rule.
 ingress:
   # OIDC / API / WebFinger on the auth domain -> backend
+  - hostname: __AUTH_DOMAIN__
+    path: /auth*
+    service: http://backend:3000
+  - hostname: __AUTH_DOMAIN__
+    path: /interaction*
+    service: http://backend:3000
+  - hostname: __AUTH_DOMAIN__
+    path: /token*
+    service: http://backend:3000
+  - hostname: __AUTH_DOMAIN__
+    path: /userinfo*
+    service: http://backend:3000
+  - hostname: __AUTH_DOMAIN__
+    path: /session*
+    service: http://backend:3000
   - hostname: __AUTH_DOMAIN__
     path: /oauth2*
     service: http://backend:3000

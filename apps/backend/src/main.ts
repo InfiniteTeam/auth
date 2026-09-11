@@ -15,7 +15,7 @@ import type { NextFunction, Request, Response } from "express";
 import Provider from "oidc-provider";
 import { AppModule } from "./app.module.js";
 import { OIDC_PROVIDER } from "./oidc/oidc.module.js";
-import { isOidcRoute } from "./oidc/oidc-routes.js";
+import { isOidcRoute, OIDC_INTERACTION_ROUTE } from "./oidc/oidc-routes.js";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -39,9 +39,11 @@ async function bootstrap(): Promise<void> {
 
   // Mount the OIDC provider on the raw Express instance. Only oidc-provider
   // routes (`/auth`, `/token`, `/.well-known/openid-configuration`,
-  // `/.well-known/jwks.json`, `/interaction/*`, ...) are delegated to its
-  // callback; every other path falls through to the Nest router (the
-  // `/api/v1/*` API and the WebFinger endpoint).
+  // `/.well-known/jwks.json`, `/interaction/:uid` in dev, ...) are delegated
+  // to its callback; the static production interaction endpoint
+  // (`/interaction`, served by the Nest interaction controller) and every
+  // other path fall through to the Nest router (the production interaction
+  // route excluded, `/api/v1/*` API and the WebFinger endpoint included).
   const express = app.getHttpAdapter().getInstance() as {
     use: (
       handler: (req: Request, res: Response, next: NextFunction) => void,
@@ -54,7 +56,7 @@ async function bootstrap(): Promise<void> {
     res: Response,
   ) => void;
   express.use((req, res, next) => {
-    if (isOidcRoute(req.path)) {
+    if (req.path !== OIDC_INTERACTION_ROUTE && isOidcRoute(req.path)) {
       oidcCallback(req, res);
       return;
     }

@@ -1,8 +1,10 @@
 /**
  * OIDC provider route table.
  *
- * These paths are handed to the raw `oidc-provider` Express callback; anything
- * else falls through to the Nest router. Kept in lockstep with the `routes`
+ * These paths are handed to the raw `oidc-provider` Express callback, except
+ * the static production interaction endpoint (`/interaction`), which the Nest
+ * interaction controller serves through the Nest router. Anything else falls
+ * through to the Nest router as well. Kept in lockstep with the `routes`
  * configuration in {@link ../provider.factory}.
  */
 
