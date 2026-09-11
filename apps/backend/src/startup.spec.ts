@@ -55,7 +55,7 @@ function importGraph(): Map<string, Set<string>> {
     const targets = new Set<string>();
     const text = readFileSync(full, "utf8");
     for (const match of text.matchAll(pattern)) {
-      if (match[1]) {
+      if (match[1] || match[2] === undefined) {
         continue;
       }
       const target = normalize(join(dirname(src), match[2])).replace(/\.js$/, "");
