@@ -33,14 +33,17 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Link relation used for OpenID Connect issuer discovery (RFC 7033 §3.1). */
+const ISSUER_REL = "http://openid.net/specs/connect/1.0/issuer";
+
 /**
- * Matches a WebFinger resource targeted at this platform: an `acct:` URI whose
- * host (with an optional local part) is exactly {@link DOMAIN_ROOT}. Rejecting
- * anything outside the domain keeps the endpoint from reflecting arbitrary
- * URIs back to the client (RFC 7033).
+ * Matches a WebFinger resource targeted at this platform: an `acct:` URI with
+ * a local part whose host is exactly {@link DOMAIN_ROOT}. The local part is
+ * required (`acct:user@host`, RFC 7565); rejecting anything else keeps the
+ * endpoint from reflecting arbitrary URIs back to the client.
  */
 const ACCT_RESOURCE_RE = new RegExp(
-  `^acct:(?:[^@\\s]+@)?${escapeRegExp(DOMAIN_ROOT)}$`,
+  `^acct:[^@\\s]+@${escapeRegExp(DOMAIN_ROOT)}$`,
 );
 
 @ApiTags("webfinger")
@@ -49,34 +52,37 @@ export class WebFingerController {
   constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {}
 
   /**
-   * Resolves a WebFinger resource association. The `resource` query parameter
-   * follows RFC 7033; when omitted the controller falls back to resolving for
-   * the platform domain itself (`acct:user@{domain}`). Descriptors are served
-   * with no-cache headers so responses cannot be cached and replayed by
-   * intermediate caches.
+   * Resolves a WebFinger resource descriptor. The `resource` query parameter
+   * is required exactly once (RFC 7033 §4.2): absent, repeated, malformed, or
+   * foreign values fail with 400. The optional `rel` parameter filters the
+   * returned links (RFC 7033 §4.3); unknown relations yield an empty `links`
+   * array while the rest of the descriptor is preserved. Descriptors are
+   * served with no-cache headers so responses cannot be cached and replayed
+   * by intermediate caches.
    */
   @Get()
   @Header("Cache-Control", "no-store, max-age=0")
   @Header("Content-Type", "application/jrd+json")
+  @Header("Access-Control-Allow-Origin", "*")
   @Header("X-Content-Type-Options", "nosniff")
   @ApiOperation({ summary: "WebFinger resource descriptor (RFC 7033)" })
-  @ApiQuery({ name: "resource", required: false })
+  @ApiQuery({ name: "resource", required: true })
+  @ApiQuery({ name: "rel", required: false })
   @ApiResponse({ status: 200, description: "JSON Resource Descriptor" })
   @ApiResponse({ status: 400, description: "Malformed or foreign resource" })
-  getWebFinger(@Query("resource") resource?: string): WebFingerResponse {
-    const acct = resource ?? `acct:user@${DOMAIN_ROOT}`;
-    if (!ACCT_RESOURCE_RE.test(acct)) {
+  getWebFinger(
+    @Query("resource") resource?: string,
+    @Query("rel") rel?: string | string[],
+  ): WebFingerResponse {
+    if (typeof resource !== "string" || !ACCT_RESOURCE_RE.test(resource)) {
       throw new BadRequestException("Invalid WebFinger resource");
     }
     const issuer = this.config.issuerUrl || OIDC_ISSUER;
-    return {
-      subject: acct,
-      links: [
-        {
-          rel: "http://openid.net/specs/connect/1.0/issuer",
-          href: issuer,
-        },
-      ],
-    };
+    const requested = rel === undefined ? [] : Array.isArray(rel) ? rel : [rel];
+    const links =
+      requested.length === 0 || requested.includes(ISSUER_REL)
+        ? [{ rel: ISSUER_REL, href: issuer }]
+        : [];
+    return { subject: resource, links };
   }
 }
