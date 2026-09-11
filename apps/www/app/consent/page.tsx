@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AuthShell } from "@/components/AuthShell";
 import { Button } from "@/components/ui/button";
+import { ConsentActions } from "@/components/consent-actions";
 
 export const metadata: Metadata = {
   title: "권한 요청 · Infinite Studio SSO",
@@ -71,19 +72,10 @@ export default async function ConsentPage({ searchParams }: PageProps) {
             )}
           </div>
           <div className="inline-actions">
-            <Button
-              size="lg"
-              variant="outline"
-              render={<Link href={decisionUrl(redirectUrl, "deny")} />}
-            >
-              거부
-            </Button>
-            <Button
-              size="lg"
-              render={<Link href={decisionUrl(redirectUrl, "allow")} />}
-            >
-              동의하고 연결
-            </Button>
+            <ConsentActions
+              allowUrl={decisionUrl(redirectUrl, "allow")}
+              denyUrl={decisionUrl(redirectUrl, "deny")}
+            />
           </div>
         </>
       ) : (
