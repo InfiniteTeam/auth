@@ -22,8 +22,20 @@ set -euo pipefail
 # Requires: curl, python3.
 #
 # NOTE: lldap's HTTP port is not published by docker-compose, so run this
-# from a host that can reach it (e.g. with an SSH tunnel forwarding 17170),
-# or override LLDAP_URL accordingly.
+# from a host that can reach it. On the server itself, expose it temporarily
+# without touching the tracked compose file:
+#
+#   cat > /tmp/inft-ports.yml <<'EOF'
+#   services:
+#     lldap:
+#       ports: ["127.0.0.1:17170:17170"]
+#   EOF
+#   docker compose -f docker-compose.yml -f /tmp/inft-ports.yml up -d lldap
+#   ./grant-admin.sh filename@inft.kr
+#
+# Afterwards you may drop the mapping again (`docker compose up -d lldap`);
+# data is kept in volumes either way. Alternatively use an SSH tunnel that
+# forwards remote 17170 to your machine, or override LLDAP_URL accordingly.
 # ============================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -124,7 +136,15 @@ def post(path, payload, token=None):
         with urllib.request.urlopen(req, timeout=15) as res:
             return json.loads(res.read().decode())
     except Exception as e:
-        fail(f"HTTP request to {path} failed: {e}")
+        hint = ""
+        if "Connection refused" in str(e) or "Name or service not known" in str(e):
+            hint = (
+                " Is lldap reachable from here? docker-compose does not publish "
+                "its HTTP port, so on the server run with a temporary port mapping: "
+                "docker compose -f docker-compose.yml -f /tmp/inft-ports.yml up -d lldap "
+                "(see script header)."
+            )
+        fail(f"HTTP request to {path} failed: {e}.{hint}")
 
 
 def gql(token, query, variables=None):
