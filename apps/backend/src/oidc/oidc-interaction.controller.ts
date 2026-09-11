@@ -15,7 +15,7 @@
  * to this endpoint (the `_interaction` cookie is scoped to `/interaction`).
  */
 
-import { Controller, Get, Inject, Req, Res } from "@nestjs/common";
+import { Controller, Get, Inject, Logger, Req, Res } from "@nestjs/common";
 import type { Request, Response } from "express";
 import Provider, { errors as providerErrors } from "oidc-provider";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
@@ -48,6 +48,8 @@ function toScopeList(value: unknown): string[] {
 
 @Controller()
 export class OidcInteractionController {
+  private readonly logger = new Logger(OidcInteractionController.name);
+
   constructor(
     @Inject(OIDC_PROVIDER) private readonly provider: Provider,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
@@ -65,7 +67,12 @@ export class OidcInteractionController {
         // state is unrecoverable in this browser (logging in again cannot
         // resurrect it), so send the user to a plain login with an expiry
         // notice instead of `return_to`: bouncing back to `/interaction`
-        // would loop forever.
+        // would loop forever. Cookie presence (never values) is logged to
+        // tell a missing cookie apart from an expired record server-side.
+        const cookies = (req.cookies ?? {}) as Record<string, string | undefined>;
+        this.logger.warn(
+          `Interaction session not found (hasInteractionCookie=${Boolean(cookies["_interaction"])}, path=${req.path})`,
+        );
         const loginUrl = new URL("/login", this.uiOrigin);
         loginUrl.searchParams.set("expired", "1");
         res.redirect(302, loginUrl.toString());

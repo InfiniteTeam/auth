@@ -16,6 +16,7 @@ import Provider, {
   type Configuration,
   type FindAccount,
 } from "oidc-provider";
+import { Logger } from "@nestjs/common";
 import { OIDC_ISSUER } from "@inftkr/shared";
 import { PrismaService } from "../prisma/prisma.service.js";
 import type { AppConfig } from "../config/config.js";
@@ -31,6 +32,9 @@ export const TAILSCALE_REDIRECT_URI =
 export const TAILSCALE_SCOPES = ["openid", "profile", "email"];
 /** The stable client id used for the Tailscale custom OIDC client. */
 export const TAILSCALE_CLIENT_ID = "tailscale";
+
+/** Server-side logger for provider-level failures. */
+const factoryLogger = new Logger("OidcProvider");
 
 /**
  * Creates the application {@link Provider}.
@@ -123,6 +127,22 @@ export function createProvider(
     features: {
       devInteractions: { enabled: config.nodeEnv !== "production" },
       resourceIndicators: { enabled: false },
+    },
+    renderError: async (ctx, out, error) => {
+      // The default renderer only prints a NOTICE server-side, which makes
+      // production authorization failures undebuggable. Log the failure here
+      // and serve a generic page (details stay in the server logs).
+      const detail =
+        error instanceof Error
+          ? `${error.name}: ${error.message}`
+          : String(error);
+      factoryLogger.warn(`OIDC error at ${ctx.path}: ${detail}`);
+      ctx.status =
+        typeof ctx.status === "number" && ctx.status >= 400
+          ? ctx.status
+          : 500;
+      ctx.type = "html";
+      ctx.body = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Authorization failed</title></head><body><h1>Authorization failed (${out.error})</h1><p>Please restart the sign-in from the service and try again.</p></body></html>`;
     },
   };
 
