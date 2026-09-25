@@ -15,6 +15,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { AuthProvider, Session } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { PlatformSettingsService } from "../config/platform-settings.service.js";
 import { SnowflakeGenerator } from "../common/snowflake.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { SessionService } from "../session/session.service.js";
@@ -61,6 +62,7 @@ export class SocialService {
 
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly platformSettings: PlatformSettingsService,
     @Inject(SOCIAL_PROVIDERS)
     private readonly providers: readonly SocialProvider[],
     private readonly oauthState: OAuthStateService,
@@ -75,9 +77,13 @@ export class SocialService {
     });
   }
 
-  /** The exact redirect URI registered with the provider. */
-  redirectUri(provider: SocialProviderId): string {
-    return `${this.config.socialRedirectBaseUrl}/api/v1/auth/social/${provider}/callback`;
+  /**
+   * The exact redirect URI registered with the provider. Resolved per call so
+   * an admin override of the redirect base URL applies without a restart.
+   */
+  async redirectUri(provider: SocialProviderId): Promise<string> {
+    const base = await this.platformSettings.getSocialRedirectOrigin();
+    return `${base}/api/v1/auth/social/${provider}/callback`;
   }
 
   /**
@@ -92,7 +98,7 @@ export class SocialService {
     const created = this.oauthState.create(provider, impl.requiresPkce);
     const authorizationUrl = await impl.authorizationUrl({
       state: created.state,
-      redirectUri: this.redirectUri(provider),
+      redirectUri: await this.redirectUri(provider),
       codeChallenge: created.codeVerifier,
     });
     return { authorizationUrl, cookieValue: created.cookieValue };
@@ -125,10 +131,11 @@ export class SocialService {
 
     let profile: SocialProfile;
     let accessToken: string;
+    const redirectUri = await this.redirectUri(provider);
     try {
       const token = await impl.exchangeCode({
         code: query.code,
-        redirectUri: this.redirectUri(provider),
+        redirectUri,
         codeVerifier: payload.codeVerifier,
       });
       accessToken = token.accessToken;

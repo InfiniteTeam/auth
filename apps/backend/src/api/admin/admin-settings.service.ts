@@ -9,8 +9,43 @@
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { DOMAIN_ROOT } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../../config/config.js";
+import {
+  ALLOWED_DOMAINS_KEY,
+  PlatformSettingsService,
+  SOCIAL_REDIRECT_BASE_URL_KEY,
+} from "../../config/platform-settings.service.js";
 import { PrismaService } from "../../prisma/prisma.service.js";
 import { SETTING_DEFINITIONS, findSettingDefinition } from "./setting-registry.js";
+
+/**
+ * Validates an override before it is stored. Rejecting bad shapes here beats
+ * silently ignoring them at enforcement time, which used to make a saved
+ * override look effective in the UI while changing nothing.
+ */
+function assertValidOverride(key: string, value: unknown): void {
+  if (key === ALLOWED_DOMAINS_KEY) {
+    const list = Array.isArray(value)
+      ? value
+      : typeof value === "string"
+        ? value.split(",")
+        : null;
+    if (!list) {
+      throw new BadRequestException(
+        `${key} must be an array of domains or a comma-separated string`,
+      );
+    }
+    const bad = list.find((entry) => typeof entry !== "string" || entry.trim() === "");
+    if (bad !== undefined) {
+      throw new BadRequestException(`${key} entries must be non-empty strings`);
+    }
+    return;
+  }
+  if (key === SOCIAL_REDIRECT_BASE_URL_KEY) {
+    if (typeof value !== "string" || !/^https?:\/\//i.test(value.trim())) {
+      throw new BadRequestException(`${key} must be an http(s) URL`);
+    }
+  }
+}
 
 export interface EffectiveSetting {
   key: string;
@@ -29,6 +64,7 @@ export interface EffectiveSetting {
 export class AdminSettingsService {
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly platformSettings: PlatformSettingsService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -69,6 +105,7 @@ export class AdminSettingsService {
     if (value === null || value === undefined) {
       await this.prisma.platformSetting.deleteMany({ where: { key } });
     } else {
+      assertValidOverride(key, value);
       await this.prisma.platformSetting.upsert({
         where: { key },
         create: { key, value: value as object, updatedBy },
@@ -83,13 +120,17 @@ export class AdminSettingsService {
     return entry;
   }
 
-  /** Public deployment metadata for the WebFinger/callback info panel. */
-  meta(): { issuerUrl: string; rootDomain: string; allowedDomains: string[]; githubCallbackUrl: string; discordCallbackUrl: string } {
-    const base = this.config.socialRedirectBaseUrl.replace(/\/$/, "");
+  /**
+   * Public deployment metadata for the WebFinger/callback info panel. Reports
+   * the *effective* values (override over environment) so the panel cannot
+   * disagree with what enforcement actually uses.
+   */
+  async meta(): Promise<{ issuerUrl: string; rootDomain: string; allowedDomains: string[]; githubCallbackUrl: string; discordCallbackUrl: string }> {
+    const base = await this.platformSettings.getSocialRedirectOrigin();
     return {
       issuerUrl: this.config.issuerUrl,
       rootDomain: DOMAIN_ROOT,
-      allowedDomains: this.config.allowedDomains,
+      allowedDomains: await this.platformSettings.getAllowedDomains(),
       githubCallbackUrl: `${base}/api/v1/auth/social/github/callback`,
       discordCallbackUrl: `${base}/api/v1/auth/social/discord/callback`,
     };

@@ -34,6 +34,7 @@ import type { Request, Response } from "express";
 import type { Session } from "@inftkr/shared";
 import { SESSION_COOKIE_NAME } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { PlatformSettingsService } from "../config/platform-settings.service.js";
 import { SocialLoginParams } from "../api/dto/auth.dto.js";
 import { SessionService } from "../session/session.service.js";
 import {
@@ -62,6 +63,7 @@ interface SocialCallbackQuery {
 export class SocialController {
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly platformSettings: PlatformSettingsService,
     private readonly social: SocialService,
     private readonly settings: SocialSettingsService,
     private readonly oauthState: OAuthStateService,
@@ -120,7 +122,7 @@ export class SocialController {
     @Query() query: SocialLinkQueryDto,
     @Res() res: Response,
   ): Promise<void> {
-    const base = this.config.socialRedirectBaseUrl.replace(/\/$/, "");
+    const base = await this.platformSettings.getSocialRedirectOrigin();
     const outcome = await this.social.verifyLink(query.accountId, query.token);
     if (!outcome.ok) {
       res.redirect(
@@ -198,7 +200,7 @@ export class SocialController {
       session,
     );
 
-    const base = this.config.socialRedirectBaseUrl.replace(/\/$/, "");
+    const base = await this.platformSettings.getSocialRedirectOrigin();
     switch (outcome.kind) {
       case "login":
         res.cookie(

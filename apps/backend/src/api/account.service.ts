@@ -16,6 +16,7 @@ import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import type { Session } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { PlatformSettingsService } from "../config/platform-settings.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { SessionService } from "../session/session.service.js";
 import { LldapAuthenticationError, LldapService } from "../lldap/lldap.service.js";
@@ -36,6 +37,7 @@ const EMAIL_CHANGE_MAX_ATTEMPTS = 5;
 export class AccountService {
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly platformSettings: PlatformSettingsService,
     private readonly prisma: PrismaService,
     private readonly sessionService: SessionService,
     private readonly lldap: LldapService,
@@ -85,7 +87,7 @@ export class AccountService {
    * decide whether to show the dismissible "LDAP unavailable" warning.
    */
   async emailDomainPolicy(session: Session) {
-    const allowedDomains = this.config.allowedDomains;
+    const allowedDomains = await this.platformSettings.getAllowedDomains();
     return {
       email: session.user.email,
       allowedDomains,
@@ -137,7 +139,7 @@ export class AccountService {
     if (newEmail === session.user.email.toLowerCase()) {
       throw new BadRequestException("This is already your email address");
     }
-    if (!isEmailDomainAllowed(newEmail, this.config.allowedDomains)) {
+    if (!isEmailDomainAllowed(newEmail, await this.platformSettings.getAllowedDomains())) {
       throw new BadRequestException("Email domain is not allowed");
     }
     if (await this.lldap.resolveUidByEmail(newEmail)) {
@@ -241,7 +243,8 @@ export class AccountService {
 
   /** Rejects LDAP-only operations for accounts outside the allow-list. */
   private async assertLdapEligible(email: string): Promise<void> {
-    if (!isEmailDomainAllowed(email, this.config.allowedDomains)) {
+    const allowedDomains = await this.platformSettings.getAllowedDomains();
+    if (!isEmailDomainAllowed(email, allowedDomains)) {
       throw new BadRequestException(
         "LDAP features are unavailable for this email domain. Change your email address to an allowed domain first.",
       );

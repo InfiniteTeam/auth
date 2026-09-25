@@ -10,7 +10,7 @@
 
 import { Inject, Injectable } from "@nestjs/common";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
-import { PrismaService } from "../prisma/prisma.service.js";
+import { PlatformSettingsService } from "../config/platform-settings.service.js";
 import { SocialConfigurationError } from "./social.types.js";
 import type { SocialProviderId } from "./social.types.js";
 import type { ProviderOauthConfig } from "./providers/provider.interface.js";
@@ -58,7 +58,7 @@ const KEYS = {
 export class SocialSettingsService {
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
-    private readonly prisma: PrismaService,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
 
   /**
@@ -127,8 +127,7 @@ export class SocialSettingsService {
    * `null` row) exists, meaning "fall back to the environment default".
    */
   private async read(key: string): Promise<unknown> {
-    const row = await this.prisma.platformSetting.findUnique({ where: { key } });
-    return row?.value ?? undefined;
+    return this.platformSettings.read(key);
   }
 
   private envClientId(provider: SocialProviderId): string | undefined {

@@ -10,6 +10,7 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { PlatformSettingsService } from "../config/platform-settings.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { MailService } from "./mail.service.js";
 import type {
@@ -31,6 +32,7 @@ export class VerificationService {
 
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly platformSettings: PlatformSettingsService,
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
   ) {}
@@ -68,7 +70,8 @@ export class VerificationService {
       },
     });
 
-    const link = `${this.config.socialRedirectBaseUrl}/api/v1/auth/social/verify/link?accountId=${encodeURIComponent(accountId)}&token=${token}`;
+    const base = await this.platformSettings.getSocialRedirectOrigin();
+    const link = `${base}/api/v1/auth/social/verify/link?accountId=${encodeURIComponent(accountId)}&token=${token}`;
     try {
       await this.mail.sendVerificationEmail({ to: account.email, code, link });
     } catch (error) {

@@ -18,6 +18,17 @@ const GROUP_TITLES: Record<string, string> = {
   domains: '도메인·정책',
 };
 
+/**
+ * Explains the blast radius of the settings whose value silently changes who
+ * can authenticate, so an edit is never a guess.
+ */
+const KEY_HINTS: Record<string, string> = {
+  'auth.allowedDomains':
+    'LDAP 로그인과 비밀번호 관리를 사용할 수 있는 이메일 도메인입니다. 소셜 로그인 가입은 이 목록의 영향을 받지 않으며, 목록 밖 도메인으로 가입한 계정은 LDAP 기능을 사용할 수 없습니다. 빈 배열로 저장하면 LDAP 로그인이 전체 비활성화됩니다. 이메일 변경도 이 목록 안의 주소로만 가능합니다.',
+  'auth.socialRedirectBaseUrl':
+    '소셜 콜백 URL과 인증 메일 링크, 로그인 후 리다이렉트에 사용되는 기준 URL입니다. http(s) URL만 허용됩니다.',
+};
+
 function EnvRow({ setting, onChanged }: { setting: AdminSetting; onChanged: () => void }) {
   const [draft, setDraft] = useState(setting.secret ? '' : JSON.stringify(setting.value ?? null));
   const [pending, setPending] = useState(false);
@@ -46,6 +57,9 @@ function EnvRow({ setting, onChanged }: { setting: AdminSetting; onChanged: () =
         <CardDescription className="font-mono text-xs">{setting.key}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
+        {KEY_HINTS[setting.key] ? (
+          <p className="text-xs text-muted-foreground">{KEY_HINTS[setting.key]}</p>
+        ) : null}
         <p className="text-sm text-muted-foreground">
           현재값 · {setting.secret ? (setting.configured ? '•••••••• (설정됨)' : '(미설정)') : JSON.stringify(setting.value)}
         </p>
@@ -68,8 +82,12 @@ function EnvRow({ setting, onChanged }: { setting: AdminSetting; onChanged: () =
               await setSetting(setting.key, value);
               setMessage('저장됨');
               onChanged();
-            } catch {
-              setMessage('저장에 실패했습니다.');
+            } catch (error) {
+              // Surface the backend's rejection reason (e.g. shape validation)
+              // instead of a generic failure the admin cannot act on.
+              setMessage(
+                error instanceof AdminApiError ? error.message : '저장에 실패했습니다.',
+              );
             } finally {
               setPending(false);
             }

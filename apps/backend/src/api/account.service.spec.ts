@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from "vitest";
 import { BadRequestException } from "@nestjs/common";
 import type { Session } from "@inftkr/shared";
 import { appConfigFixture } from "../config/app-config.fixture.js";
+import { platformSettingsFixture } from "../config/platform-settings.fixture.js";
 import { AccountService } from "./account.service.js";
 
 const config = appConfigFixture();
@@ -29,7 +30,7 @@ function createSession(email: string): Session {
   };
 }
 
-function createService() {
+function createService(rows: Record<string, unknown> = {}) {
   const prisma = {
     account: {
       findMany: vi.fn(async () => []),
@@ -55,6 +56,7 @@ function createService() {
 
   const service = new AccountService(
     config,
+    platformSettingsFixture(config, rows).service,
     prisma as never,
     sessionService as never,
     lldap as never,
@@ -82,6 +84,18 @@ describe("AccountService.emailDomainPolicy", () => {
       email: "user@gmail.com",
       allowedDomains: ["inft.kr"],
       domainAllowed: false,
+    });
+  });
+
+  it("reports the overridden list, so an admin change is visible immediately", async () => {
+    const { service } = createService({
+      "auth.allowedDomains": ["gmail.com"],
+    });
+
+    await expect(service.emailDomainPolicy(createSession("user@gmail.com"))).resolves.toEqual({
+      email: "user@gmail.com",
+      allowedDomains: ["gmail.com"],
+      domainAllowed: true,
     });
   });
 });
@@ -112,6 +126,27 @@ describe("AccountService LDAP eligibility", () => {
 
     expect(lldap.setPasswordAsAdmin).toHaveBeenCalledWith("user@inft.kr", "longenough");
   });
+
+  it("honours a stored override over the environment default", async () => {
+    const { service, lldap } = createService({
+      "auth.allowedDomains": ["gmail.com"],
+    });
+
+    await service.changePassword(createSession("user@gmail.com"), undefined, "longenough");
+
+    expect(lldap.setPasswordAsAdmin).toHaveBeenCalledWith("user@gmail.com", "longenough");
+  });
+
+  it("revokes eligibility for the environment domain once overridden away", async () => {
+    const { service, lldap } = createService({
+      "auth.allowedDomains": ["gmail.com"],
+    });
+
+    await expect(
+      service.changePassword(createSession("user@inft.kr"), undefined, "longenough"),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(lldap.setPasswordAsAdmin).not.toHaveBeenCalled();
+  });
 });
 
 describe("AccountService.requestEmailChange", () => {
@@ -136,5 +171,16 @@ describe("AccountService.requestEmailChange", () => {
     expect(mail.send).toHaveBeenCalledWith(
       expect.objectContaining({ to: "user@inft.kr" }),
     );
+  });
+
+  it("validates the target against the override, not the environment default", async () => {
+    const { service, mail } = createService({
+      "auth.allowedDomains": ["gmail.com"],
+    });
+
+    await expect(
+      service.requestEmailChange(createSession("user@gmail.com"), "user@inft.kr"),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(mail.send).not.toHaveBeenCalled();
   });
 });

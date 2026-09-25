@@ -24,6 +24,7 @@ import type { Session } from "@inftkr/shared";
 import { SESSION_COOKIE_NAME } from "@inftkr/shared";
 import { LdapLoginDto } from "./dto/auth.dto.js";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { PlatformSettingsService } from "../config/platform-settings.service.js";
 import { isEmailDomainAllowed } from "../common/email-domain.util.js";
 import {
   LldapAuthenticationError,
@@ -36,6 +37,7 @@ import { SessionService } from "../session/session.service.js";
 export class AuthController {
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly platformSettings: PlatformSettingsService,
     private readonly lldapService: LldapService,
     private readonly sessionService: SessionService,
   ) {}
@@ -56,7 +58,8 @@ export class AuthController {
   ): Promise<Session> {
     // Rejected identically to bad credentials so the endpoint cannot be used
     // to probe which email domains or addresses exist.
-    if (!isEmailDomainAllowed(body.email, this.config.allowedDomains)) {
+    const allowedDomains = await this.platformSettings.getAllowedDomains();
+    if (!isEmailDomainAllowed(body.email, allowedDomains)) {
       throw new UnauthorizedException();
     }
     try {

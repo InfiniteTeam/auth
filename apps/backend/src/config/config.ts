@@ -36,7 +36,10 @@ export interface AppConfig {
   snowflakeWorkerId: number;
   /** Snowflake epoch in milliseconds (defaults to `2026-09-08T00:00:00Z`). */
   snowflakeEpochMs: number;
-  /** Email domains allowed to sign in with LDAP credentials. */
+  /**
+   * Email domains whose accounts may use LDAP features (LDAP sign-in and
+   * password management). Social sign-up is not gated on this list.
+   */
   allowedDomains: string[];
   /** GitHub OAuth App client id. Absent when GitHub sign-in is disabled. */
   githubClientId?: string;

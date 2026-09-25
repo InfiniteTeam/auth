@@ -4,6 +4,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { appConfigFixture } from "../config/app-config.fixture.js";
+import { platformSettingsFixture } from "../config/platform-settings.fixture.js";
 import { SocialConfigurationError } from "./social.types.js";
 import { SocialSettingsService } from "./social-settings.service.js";
 
@@ -11,19 +12,9 @@ function createHarness(
   overrides: Record<string, unknown> = {},
   rows: Record<string, unknown> = {},
 ) {
-  const prisma = {
-    platformSetting: {
-      findUnique: vi.fn(async ({ where }: { where: { key: string } }) => {
-        const value = rows[where.key];
-        return value === undefined ? null : { key: where.key, value };
-      }),
-    },
-  };
-  const service = new SocialSettingsService(
-    { ...appConfigFixture(), ...overrides },
-    prisma as never,
-  );
-  return { service, prisma };
+  const config = { ...appConfigFixture(), ...overrides };
+  const { service, prisma } = platformSettingsFixture(config, rows);
+  return { service: new SocialSettingsService(config, service), prisma };
 }
 
 describe("SocialSettingsService.getProviderOauth", () => {

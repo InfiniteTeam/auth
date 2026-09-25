@@ -6,6 +6,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { appConfigFixture } from "../config/app-config.fixture.js";
+import { platformSettingsFixture } from "../config/platform-settings.fixture.js";
 import { MailService } from "./mail.service.js";
 import { VerificationService } from "./verification.service.js";
 import type { SocialProviderId } from "./social.types.js";
@@ -73,6 +74,7 @@ function createHarness(account: AccountRecord = makeAccount()) {
   } as unknown as MailService;
   const service = new VerificationService(
     config,
+    platformSettingsFixture(config).service,
     prisma as never,
     mail as never,
   );

@@ -8,6 +8,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { appConfigFixture } from "../config/app-config.fixture.js";
+import { platformSettingsFixture } from "../config/platform-settings.fixture.js";
 import { SocialService } from "./social.service.js";
 import type { SocialProvider } from "./providers/provider.interface.js";
 import type { SocialProfile } from "./social.types.js";
@@ -31,7 +32,7 @@ function createProvider(): SocialProvider {
   };
 }
 
-function createService() {
+function createService(rows: Record<string, unknown> = {}) {
   const prisma = {
     account: {
       findUnique: vi.fn(async () => null),
@@ -67,6 +68,7 @@ function createService() {
 
   const service = new SocialService(
     config,
+    platformSettingsFixture(config, rows).service,
     [createProvider()],
     oauthState as never,
     verification as never,
@@ -155,5 +157,25 @@ describe("SocialService email domain policy", () => {
     const result = await service.verify("acc-1", "123456");
 
     expect(result).toEqual({ ok: false, reason: "account_not_found" });
+  });
+});
+
+describe("SocialService.redirectUri", () => {
+  it("builds the callback URI from the environment default", async () => {
+    const { service } = createService();
+
+    await expect(service.redirectUri("github")).resolves.toBe(
+      "http://localhost:3000/api/v1/auth/social/github/callback",
+    );
+  });
+
+  it("applies a stored redirect base URL override", async () => {
+    const { service } = createService({
+      "auth.socialRedirectBaseUrl": "https://auth.example.com",
+    });
+
+    await expect(service.redirectUri("discord")).resolves.toBe(
+      "https://auth.example.com/api/v1/auth/social/discord/callback",
+    );
   });
 });
