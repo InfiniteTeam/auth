@@ -15,7 +15,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { SessionService } from "../session/session.service.js";
 import { LldapAuthenticationError, LldapService } from "../lldap/lldap.service.js";
 import { MailService } from "../social/mail.service.js";
-import { isEmailDomainAllowed } from "../social/domain.util.js";
+import { isEmailDomainAllowed } from "../common/email-domain.util.js";
 
 interface EmailChangePending {
   newEmail: string;

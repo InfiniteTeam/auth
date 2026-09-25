@@ -1,8 +1,8 @@
 /**
- * Unit tests for the email domain allow-list gate.
+ * Unit tests for the email domain allow-list helper.
  */
 import { describe, expect, it } from "vitest";
-import { isEmailDomainAllowed } from "./domain.util.js";
+import { isEmailDomainAllowed } from "./email-domain.util.js";
 
 const ALLOWED = ["inft.kr"];
 
