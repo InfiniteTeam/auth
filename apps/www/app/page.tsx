@@ -7,6 +7,8 @@ import { useSession } from '@inftkr/auth-core/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuthShell } from '@/components/AuthShell';
 import { Button } from '@/components/ui/button';
+import { EmailDomainWarningDialog } from '@/components/EmailDomainWarningDialog';
+import { useEmailDomainPolicy } from '@/hooks/use-email-domain-policy';
 import { BACKEND_URL } from '@/lib/auth';
 
 function SocialNotice() {
@@ -23,6 +25,7 @@ function SocialNotice() {
 
 function HomePage() {
   const { session, isLoading } = useSession({ baseUrl: BACKEND_URL });
+  const policy = useEmailDomainPolicy(Boolean(session));
 
   if (isLoading) {
     return (
@@ -63,6 +66,7 @@ function HomePage() {
         <span>현재 안전하게 로그인되어 있습니다.</span>
       </div>
       <SocialNotice />
+      <EmailDomainWarningDialog policy={policy} />
       <div className="profile-card">
         <p>로그인 계정</p>
         <strong>{session.user.email}</strong>
