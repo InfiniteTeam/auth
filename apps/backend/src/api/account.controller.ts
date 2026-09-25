@@ -35,6 +35,15 @@ export class AccountController {
     return { socials };
   }
 
+  /**
+   * Returns the email-domain policy for the current session so the frontend
+   * can warn about unavailable LDAP features.
+   */
+  @Get("email-policy")
+  @ApiOperation({ summary: "Get my email domain policy" })
+  async emailPolicy(@Req() req: Request) {
+    return this.accountService.emailDomainPolicy(currentSession(req));
+  }
   /** Unlinks a social identity from the current user. */
   @Delete("social/:provider")
   @HttpCode(204)
@@ -49,6 +58,10 @@ export class AccountController {
   @HttpCode(204)
   @ApiOperation({ summary: "Change my password" })
   @ApiResponse({ status: 204, description: "The password was changed" })
+  @ApiResponse({
+    status: 400,
+    description: "The current email domain is not allowed to use LDAP features",
+  })
   async changePassword(@Req() req: Request, @Body() body: ChangePasswordDto): Promise<void> {
     await this.accountService.changePassword(currentSession(req), body.currentPassword, body.newPassword);
   }
