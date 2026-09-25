@@ -58,3 +58,20 @@ export class LinkedSocialAccountDto {
   /** ISO 8601 link timestamp. */
   createdAt: string;
 }
+
+/**
+ * Response for `GET /api/v1/account/email-policy`.
+ */
+export class EmailDomainPolicyDto {
+  /** The signed-in user's current email address. */
+  email: string;
+
+  /** Email domains that unlock LDAP features. */
+  allowedDomains: string[];
+
+  /**
+   * Whether the current email's domain is allow-listed. When `false`, LDAP
+   * sign-in and password management are unavailable for this account.
+   */
+  domainAllowed: boolean;
+}

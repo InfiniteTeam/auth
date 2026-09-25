@@ -79,3 +79,18 @@ export async function confirmEmailChange(code: string): Promise<{ email: string 
     body: JSON.stringify({ code }),
   });
 }
+
+/** Email-domain policy for the signed-in account. */
+export interface EmailDomainPolicy {
+  /** The account's current email address. */
+  email: string;
+  /** Email domains that unlock LDAP features. */
+  allowedDomains: string[];
+  /** Whether the current email's domain is allow-listed. */
+  domainAllowed: boolean;
+}
+
+/** Reads whether the current account may use LDAP features. */
+export async function getEmailDomainPolicy(): Promise<EmailDomainPolicy> {
+  return accountRequest<EmailDomainPolicy>('/email-policy');
+}

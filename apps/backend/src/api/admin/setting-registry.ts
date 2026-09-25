@@ -42,9 +42,9 @@ export const SETTING_DEFINITIONS: readonly SettingDefinition[] = [
   { key: "smtp.user", group: "smtp", label: "SMTP user", secret: false, requiresRestart: false },
   { key: "smtp.password", group: "smtp", label: "SMTP password", secret: true, requiresRestart: false },
   { key: "smtp.from", group: "smtp", label: "SMTP from address", secret: false, requiresRestart: false },
-  // Domains and access policy (restart/external work required).
-  { key: "auth.allowedDomains", group: "domains", label: "Allowed email domains", secret: false, requiresRestart: true },
-  { key: "auth.socialRedirectBaseUrl", group: "domains", label: "Social redirect base URL", secret: false, requiresRestart: true },
+  // Domains and access policy (resolved per request via PlatformSettingsService).
+  { key: "auth.allowedDomains", group: "domains", label: "Allowed email domains", secret: false, requiresRestart: false },
+  { key: "auth.socialRedirectBaseUrl", group: "domains", label: "Social redirect base URL", secret: false, requiresRestart: false },
 ];
 
 /**

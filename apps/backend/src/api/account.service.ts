@@ -5,17 +5,23 @@
  * Identity lives in lldap (via LDAP/GraphQL); email verification reuses the
  * SMTP mailer. Pending email changes are stored in `PlatformSetting` rows
  * (`email-change.<userId>`) so no schema migration is required.
+ *
+ * LDAP features (password management, LDAP sign-in) are only available to
+ * accounts whose email domain is in `ALLOWED_DOMAINS`. Social sign-up is not
+ * domain-gated, so a social-only account may start out LDAP-ineligible and
+ * recover by changing its email to an allowed domain.
  */
 
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import type { Session } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { PlatformSettingsService } from "../config/platform-settings.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { SessionService } from "../session/session.service.js";
 import { LldapAuthenticationError, LldapService } from "../lldap/lldap.service.js";
 import { MailService } from "../social/mail.service.js";
-import { isEmailDomainAllowed } from "../social/domain.util.js";
+import { isEmailDomainAllowed } from "../common/email-domain.util.js";
 
 interface EmailChangePending {
   newEmail: string;
@@ -31,6 +37,7 @@ const EMAIL_CHANGE_MAX_ATTEMPTS = 5;
 export class AccountService {
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly platformSettings: PlatformSettingsService,
     private readonly prisma: PrismaService,
     private readonly sessionService: SessionService,
     private readonly lldap: LldapService,
@@ -76,11 +83,28 @@ export class AccountService {
   }
 
   /**
+   * Email-domain policy for the current session. The frontend uses this to
+   * decide whether to show the dismissible "LDAP unavailable" warning.
+   */
+  async emailDomainPolicy(session: Session) {
+    const allowedDomains = await this.platformSettings.getAllowedDomains();
+    return {
+      email: session.user.email,
+      allowedDomains,
+      domainAllowed: isEmailDomainAllowed(session.user.email, allowedDomains),
+    };
+  }
+
+  /**
    * Changes the current user's LDAP password. When `currentPassword` is
    * omitted, an initial password is set (social-only accounts) via the
    * service-account admin bind.
+   *
+   * LDAP-ineligible accounts (email domain not allow-listed) cannot manage a
+   * password — there would be no way to use it for LDAP sign-in.
    */
   async changePassword(session: Session, currentPassword: string | undefined, newPassword: string) {
+    await this.assertLdapEligible(session.user.email);
     const uid = session.user.userId;
     if (currentPassword) {
       try {
@@ -106,14 +130,16 @@ export class AccountService {
 
   /**
    * Starts an email change: validates the new address and mails a code.
-   * The new email must not collide with an existing identity (no auto-merge).
+   * The new email must not collide with an existing identity (no auto-merge)
+   * and must be in the allow-list — this is the only path from an
+   * LDAP-ineligible account back to LDAP eligibility.
    */
   async requestEmailChange(session: Session, rawEmail: string) {
     const newEmail = rawEmail.toLowerCase().trim();
     if (newEmail === session.user.email.toLowerCase()) {
       throw new BadRequestException("This is already your email address");
     }
-    if (!isEmailDomainAllowed(newEmail, this.config.allowedDomains)) {
+    if (!isEmailDomainAllowed(newEmail, await this.platformSettings.getAllowedDomains())) {
       throw new BadRequestException("Email domain is not allowed");
     }
     if (await this.lldap.resolveUidByEmail(newEmail)) {
@@ -213,6 +239,16 @@ export class AccountService {
 
   private pendingKey(userId: string): string {
     return `email-change.${userId}`;
+  }
+
+  /** Rejects LDAP-only operations for accounts outside the allow-list. */
+  private async assertLdapEligible(email: string): Promise<void> {
+    const allowedDomains = await this.platformSettings.getAllowedDomains();
+    if (!isEmailDomainAllowed(email, allowedDomains)) {
+      throw new BadRequestException(
+        "LDAP features are unavailable for this email domain. Change your email address to an allowed domain first.",
+      );
+    }
   }
 
   private constantTimeEqual(a: string, b: string): boolean {

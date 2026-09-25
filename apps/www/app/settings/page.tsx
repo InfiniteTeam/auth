@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AuthShell } from '@/components/AuthShell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmailDomainWarningDialog } from '@/components/EmailDomainWarningDialog';
 import {
   Card,
   CardContent,
@@ -43,9 +44,11 @@ import {
   listLinkedSocials,
   requestEmailChange,
   unlinkSocial,
+  type EmailDomainPolicy,
   type LinkedSocial,
 } from '@/lib/account';
 import { BACKEND_URL } from '@/lib/auth';
+import { useEmailDomainPolicy } from '@/hooks/use-email-domain-policy';
 
 const GRANT_TYPES = ['authorization_code', 'refresh_token', 'implicit', 'client_credentials'] as const;
 const RESPONSE_TYPES = ['code', 'id_token', 'id_token token'] as const;
@@ -157,6 +160,11 @@ function AccountTab({
   signingOut: boolean;
   onSignOut: () => void;
 }) {
+  // Unknown while loading: stay permissive so a failed policy read never
+  // blocks a legitimate LDAP user from managing their password.
+  const policy = useEmailDomainPolicy(true);
+  const ldapEligible = policy?.domainAllowed !== false;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="profile-card">
@@ -169,11 +177,13 @@ function AccountTab({
       </div>
       <SocialConnect />
       <SocialManage />
-      <PasswordCard isLdap={session.user.provider === 'ldap'} />
-      <EmailChangeCard currentEmail={session.user.email} />
+      <PasswordCard isLdap={session.user.provider === 'ldap'} ldapEligible={ldapEligible} />
+      <EmailChangeCard currentEmail={session.user.email} policy={policy} />
       <Button size="lg" variant="destructive" disabled={signingOut} onClick={onSignOut}>
         {signingOut ? '로그아웃 중…' : '로그아웃'}
       </Button>
+      {/* Already on the page the primary action targets, so skip the push. */}
+      <EmailDomainWarningDialog policy={policy} onChangeEmail={() => undefined} />
     </div>
   );
 }
@@ -240,7 +250,7 @@ function SocialManage() {
   );
 }
 
-function PasswordCard({ isLdap }: { isLdap: boolean }) {
+function PasswordCard({ isLdap, ldapEligible }: { isLdap: boolean; ldapEligible: boolean }) {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -281,6 +291,15 @@ function PasswordCard({ isLdap }: { isLdap: boolean }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        {!ldapEligible ? (
+          <Alert>
+            <AlertTitle>LDAP 기능을 사용할 수 없습니다</AlertTitle>
+            <AlertDescription>
+              현재 이메일 도메인에서는 비밀번호를 설정하거나 변경할 수 없습니다. 아래 &lsquo;이메일
+              변경&rsquo;에서 허용된 도메인으로 이동하면 사용할 수 있습니다.
+            </AlertDescription>
+          </Alert>
+        ) : null}
         {isLdap ? (
           <div className="flex flex-col gap-2">
             <Label htmlFor="pw-current">현재 비밀번호</Label>
@@ -298,7 +317,7 @@ function PasswordCard({ isLdap }: { isLdap: boolean }) {
         {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
       </CardContent>
       <CardFooter>
-        <Button size="sm" disabled={pending} onClick={onSubmit}>
+        <Button size="sm" disabled={pending || !ldapEligible} onClick={onSubmit}>
           {pending ? '처리 중…' : isLdap ? '비밀번호 변경' : '비밀번호 설정'}
         </Button>
       </CardFooter>
@@ -306,12 +325,44 @@ function PasswordCard({ isLdap }: { isLdap: boolean }) {
   );
 }
 
-function EmailChangeCard({ currentEmail }: { currentEmail: string }) {
+function EmailChangeCard({
+  currentEmail,
+  policy,
+}: {
+  currentEmail: string;
+  policy: EmailDomainPolicy | null;
+}) {
   const [step, setStep] = useState<'idle' | 'sent'>('idle');
   const [newEmail, setNewEmail] = useState('');
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  const domainNotAllowed = policy?.domainAllowed === false;
+  const allowed = policy?.allowedDomains ?? [];
+
+  const requestCode = useCallback(async () => {
+    setPending(true);
+    try {
+      await requestEmailChange(newEmail.trim());
+      setStep('sent');
+      setMessage('새 주소로 확인 코드를 보냈습니다.');
+    } catch (error) {
+      // The backend rejects out-of-policy domains; say so instead of the
+      // generic failure so the user knows which address will work.
+      if (error instanceof AdminApiError && error.message === 'Email domain is not allowed') {
+        setMessage(
+          allowed.length > 0
+            ? `허용되지 않은 도메인입니다. 사용 가능한 도메인: ${allowed.join(', ')}`
+            : '허용되지 않은 도메인입니다.',
+        );
+      } else {
+        setMessage('요청에 실패했습니다. 주소를 확인해 주세요.');
+      }
+    } finally {
+      setPending(false);
+    }
+  }, [allowed, newEmail]);
 
   return (
     <Card>
@@ -323,6 +374,15 @@ function EmailChangeCard({ currentEmail }: { currentEmail: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        {domainNotAllowed ? (
+          <Alert>
+            <AlertTitle>LDAP 기능을 사용할 수 없습니다</AlertTitle>
+            <AlertDescription>
+              현재 이메일 도메인은 LDAP 로그인과 비밀번호 관리를 지원하지 않습니다.
+              {allowed.length > 0 ? ` 아래 도메인으로 변경하면 LDAP 기능을 사용할 수 있습니다: ${allowed.join(', ')}` : ' 관리자에게 허용 도메인 설정을 요청해 주세요.'}
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <div className="flex flex-col gap-2">
           <Label htmlFor="email-new">새 이메일</Label>
           <Input id="email-new" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} disabled={step === 'sent'} />
@@ -337,22 +397,7 @@ function EmailChangeCard({ currentEmail }: { currentEmail: string }) {
       </CardContent>
       <CardFooter className="flex gap-2">
         {step === 'idle' ? (
-          <Button
-            size="sm"
-            disabled={pending || !newEmail.trim()}
-            onClick={async () => {
-              setPending(true);
-              try {
-                await requestEmailChange(newEmail.trim());
-                setStep('sent');
-                setMessage('새 주소로 확인 코드를 보냈습니다.');
-              } catch {
-                setMessage('요청에 실패했습니다. 주소를 확인해 주세요.');
-              } finally {
-                setPending(false);
-              }
-            }}
-          >
+          <Button size="sm" disabled={pending || !newEmail.trim()} onClick={requestCode}>
             확인 코드 보내기
           </Button>
         ) : (

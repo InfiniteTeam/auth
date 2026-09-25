@@ -58,6 +58,7 @@ Managed in `deploy/.env`. See [.env.example](./.env.example) for details.
 |----------|-------------|---------|
 | `AUTH_DOMAIN` | Auth server domain (OIDC issuer) | `auth.example.com` |
 | `ROOT_DOMAIN` | WebFinger domain | `example.com` |
+| `ALLOWED_DOMAINS` | Comma-separated email domains allowed to use LDAP features. Social sign-up is **not** gated on this; accounts outside it can register and sign in socially but LDAP sign-in and password management are refused, and the UI asks them to change their email. Empty disables LDAP features entirely. Environment default for the `auth.allowedDomains` setting, which admins can override at runtime from `/admin/env`. | `inft.kr` |
 | `POSTGRES_PASSWORD` | PostgreSQL superuser password | - |
 | `AUTH_DB_PASSWORD` | auth DB password | - |
 | `LLDAP_DB_PASSWORD` | lldap DB password | - |

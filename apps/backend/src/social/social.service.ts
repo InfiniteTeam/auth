@@ -15,11 +15,11 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { AuthProvider, Session } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { PlatformSettingsService } from "../config/platform-settings.service.js";
 import { SnowflakeGenerator } from "../common/snowflake.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { SessionService } from "../session/session.service.js";
 import { LldapService } from "../lldap/lldap.service.js";
-import { isEmailDomainAllowed } from "./domain.util.js";
 import { SOCIAL_PROVIDERS } from "./providers/provider.interface.js";
 import type { SocialProvider } from "./providers/provider.interface.js";
 import { OAuthStateService } from "./oauth-state.service.js";
@@ -41,7 +41,6 @@ export type SocialErrorCode =
   | "already_linked"
   | "membership_required"
   | "email_exists"
-  | "email_domain_not_allowed"
   | "verification_unavailable";
 
 /** Discriminated outcome of a callback handling run. */
@@ -63,6 +62,7 @@ export class SocialService {
 
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly platformSettings: PlatformSettingsService,
     @Inject(SOCIAL_PROVIDERS)
     private readonly providers: readonly SocialProvider[],
     private readonly oauthState: OAuthStateService,
@@ -77,9 +77,13 @@ export class SocialService {
     });
   }
 
-  /** The exact redirect URI registered with the provider. */
-  redirectUri(provider: SocialProviderId): string {
-    return `${this.config.socialRedirectBaseUrl}/api/v1/auth/social/${provider}/callback`;
+  /**
+   * The exact redirect URI registered with the provider. Resolved per call so
+   * an admin override of the redirect base URL applies without a restart.
+   */
+  async redirectUri(provider: SocialProviderId): Promise<string> {
+    const base = await this.platformSettings.getSocialRedirectOrigin();
+    return `${base}/api/v1/auth/social/${provider}/callback`;
   }
 
   /**
@@ -94,7 +98,7 @@ export class SocialService {
     const created = this.oauthState.create(provider, impl.requiresPkce);
     const authorizationUrl = await impl.authorizationUrl({
       state: created.state,
-      redirectUri: this.redirectUri(provider),
+      redirectUri: await this.redirectUri(provider),
       codeChallenge: created.codeVerifier,
     });
     return { authorizationUrl, cookieValue: created.cookieValue };
@@ -127,10 +131,11 @@ export class SocialService {
 
     let profile: SocialProfile;
     let accessToken: string;
+    const redirectUri = await this.redirectUri(provider);
     try {
       const token = await impl.exchangeCode({
         code: query.code,
-        redirectUri: this.redirectUri(provider),
+        redirectUri,
         codeVerifier: payload.codeVerifier,
       });
       accessToken = token.accessToken;
@@ -284,6 +289,11 @@ export class SocialService {
     return this.createSignup(provider, profile);
   }
 
+  /**
+   * Creates a brand-new sign-up account. The provider's email is accepted
+   * regardless of its domain — domain eligibility only gates LDAP features
+   * after the account exists.
+   */
   private async createSignup(
     provider: SocialProviderId,
     profile: SocialProfile,
@@ -295,13 +305,6 @@ export class SocialService {
       return { kind: "error", code: "provider_error" };
     }
     const lower = profile.email.toLowerCase();
-
-    if (!isEmailDomainAllowed(lower, this.config.allowedDomains)) {
-      this.logger.warn(
-        `Social sign-up rejected: email domain not allowed (provider=${provider}, email=${lower})`,
-      );
-      return { kind: "error", code: "email_domain_not_allowed" };
-    }
 
     const lldapCollision = await this.lldap.resolveUidByEmail(lower);
     if (lldapCollision) {
@@ -360,7 +363,10 @@ export class SocialService {
 
   /**
    * Finalizes a verified sign-up: creates the lldap user when missing, then
-   * creates a session and its signed cookie.
+   * creates a session and its signed cookie. The email domain is not
+   * re-checked here — the identity must exist regardless of domain so that
+   * LDAP eligibility can be resolved (and later repaired via an email
+   * change) from a single place.
    */
   private async finalizeAccount(
     accountId: string,
@@ -370,12 +376,6 @@ export class SocialService {
     });
     if (!account || !account.verified) {
       return { ok: false, reason: "account_not_found" };
-    }
-    if (!isEmailDomainAllowed(account.userId, this.config.allowedDomains)) {
-      this.logger.warn(
-        `Social finalize rejected: email domain not allowed (account=${account.id})`,
-      );
-      return { ok: false, reason: "invalid_input" };
     }
     const lldapUid = await this.lldap.resolveUidByEmail(account.userId);
     if (!lldapUid) {

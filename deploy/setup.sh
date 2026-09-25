@@ -77,6 +77,12 @@ main() {
   info "1. Domain configuration"
   ask "Auth server domain" "auth.example.com" AUTH_DOMAIN
   ask "WebFinger (root) domain" "example.com" ROOT_DOMAIN
+  echo
+  echo "    Allowed email domains gate LDAP sign-in and password management."
+  echo "    Social sign-up is not restricted: accounts outside this list can"
+  echo "    register and sign in socially, but LDAP features are unavailable"
+  echo "    and the UI warns them to change their email. Comma-separated."
+  ask "Allowed email domains" "${ROOT_DOMAIN}" ALLOWED_DOMAINS
 
   # ---------------- Admin ----------------
   echo
@@ -170,6 +176,7 @@ ADMIN_GROUP_NAME=admins
 SESSION_SECRET=${SESSION_SECRET}
 TAILSCALE_CLIENT_SECRET=${TAILSCALE_CLIENT_SECRET}
 SNOWFLAKE_WORKER_ID=0
+ALLOWED_DOMAINS=${ALLOWED_DOMAINS}
 
 # Cloudflare Tunnel (optional)
 TUNNEL_TOKEN=${TUNNEL_TOKEN}
