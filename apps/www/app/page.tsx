@@ -40,10 +40,10 @@ function HomePage() {
 
   if (!session) {
     return (
-      <AuthShell requestLabel="INFINITE STUDIO IDENTITY" requestName="통합 인증 포털">
+      <AuthShell requestLabel="Infinite Studio Identity" requestName="통합 인증 포털">
         <div className="card-heading">
-          <p>계정으로 계속하기</p>
-          <h1>Infinite Studio에 오신 것을 환영합니다</h1>
+          <h1>계정으로 계속하기</h1>
+          <p>Infinite Studio에 오신 것을 환영합니다</p>
           <span>로그인하면 연결된 서비스와 계정 설정을 안전하게 이용할 수 있습니다.</span>
         </div>
         <div className="inline-actions">
@@ -61,8 +61,8 @@ function HomePage() {
   return (
     <AuthShell requestLabel="로그인됨" requestName="Infinite Studio 계정">
       <div className="card-heading">
-        <p>계정 홈</p>
-        <h1>안녕하세요</h1>
+        <h1>계정 홈</h1>
+        <p>안녕하세요</p>
         <span>현재 안전하게 로그인되어 있습니다.</span>
       </div>
       <SocialNotice />
@@ -70,7 +70,7 @@ function HomePage() {
       <div className="profile-card">
         <p>로그인 계정</p>
         <strong>{session.user.email}</strong>
-        <div className="profile-meta">권한 · {session.user.roles.join(', ') || 'user'}</div>
+        <div className="profile-meta"><span>권한</span><span>{session.user.roles.join(', ') || 'user'}</span></div>
       </div>
       <div className="inline-actions">
         <Button size="lg" render={<Link href="/settings" />}>

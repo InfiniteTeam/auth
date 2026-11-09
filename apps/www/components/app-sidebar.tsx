@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
+  ArrowLeft,
   Fingerprint,
   Globe,
   KeyRound,
@@ -25,7 +27,15 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-const NAV: { label: string; items: { href: string; title: string; icon: typeof LayoutDashboard; exact?: boolean }[] }[] = [
+const NAV: {
+  label: string;
+  items: {
+    href: string;
+    title: string;
+    icon: typeof LayoutDashboard;
+    exact?: boolean;
+  }[];
+}[] = [
   {
     label: '관리',
     items: [
@@ -53,14 +63,12 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader>
+    <Sidebar variant="sidebar" collapsible="icon">
+      <SidebarHeader className="border-b py-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href="/admin" />}>
-              <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-                IS
-              </span>
+              <Image src="/logo.svg" alt="" width={32} height={32} className="size-8 shrink-0" />
               <span className="flex flex-col leading-tight">
                 <strong className="text-sm">Infinite Studio</strong>
                 <small className="text-xs text-muted-foreground">Admin</small>
@@ -69,10 +77,10 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="gap-3 py-4">
         {NAV.map((section) => (
           <SidebarGroup key={section.label}>
-            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-sm">{section.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => {
@@ -81,7 +89,13 @@ export function AppSidebar() {
                     : pathname === item.href || pathname.startsWith(`${item.href}/`);
                   return (
                     <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton render={<Link href={item.href} />} isActive={active} tooltip={item.title}>
+                      <SidebarMenuButton
+                        render={
+                          <Link href={item.href} aria-current={active ? 'page' : undefined} />
+                        }
+                        isActive={active}
+                        tooltip={item.title}
+                      >
                         <item.icon />
                         <span>{item.title}</span>
                       </SidebarMenuButton>
@@ -93,11 +107,11 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t py-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton render={<Link href="/" />} tooltip="계정 홈으로">
-              <span aria-hidden>←</span>
+              <ArrowLeft aria-hidden="true" />
               <span>계정 홈으로</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

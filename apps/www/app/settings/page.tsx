@@ -78,8 +78,9 @@ function ToggleGroup({
       <span className="text-sm font-medium text-foreground">{title}</span>
       <div className="flex flex-wrap gap-x-5 gap-y-2">
         {options.map((option) => (
-          <span key={option} className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span key={option} className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
             <Checkbox
+              aria-label={option}
               checked={selected.has(option)}
               onCheckedChange={(checked) => onToggle(option, Boolean(checked))}
             />
@@ -126,7 +127,7 @@ function SocialConnect() {
   return (
     <div className="profile-card flex flex-col gap-3">
       <div>
-        <p>소셜 계정 연결</p>
+        <h2 className="text-base font-medium">소셜 계정 연결</h2>
         <p className="mt-1">다른 소셜 계정을 연결하면 그 계정으로도 로그인할 수 있습니다.</p>
       </div>
       {error ? (
@@ -166,13 +167,14 @@ function AccountTab({
   const ldapEligible = policy?.domainAllowed !== false;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="account-sections flex flex-col gap-6">
       <div className="profile-card">
-        <p>로그인 계정</p>
+        <h2 className="text-sm text-muted-foreground">로그인 계정</h2>
         <strong>{session.user.email}</strong>
         <p className="mt-1">{session.user.name || session.user.userId}</p>
         <div className="profile-meta">
-          {session.user.provider} · {session.user.roles.join(', ') || 'user'}
+          <span>{session.user.provider}</span>
+          <span>{session.user.roles.join(', ') || 'user'}</span>
         </div>
       </div>
       <SocialConnect />
@@ -226,7 +228,7 @@ function SocialManage() {
   return (
     <div className="profile-card flex flex-col gap-3">
       <div>
-        <p>연결된 소셜 계정</p>
+        <h2 className="text-base font-medium">연결된 소셜 계정</h2>
         <p className="mt-1">연결을 해제하면 해당 소셜 계정으로 로그인할 수 없습니다.</p>
       </div>
       {error ? (
@@ -237,8 +239,9 @@ function SocialManage() {
       <ul className="flex flex-col gap-2">
         {linked.map((s) => (
           <li key={s.provider} className="flex items-center justify-between gap-2 text-sm">
-            <span>
-              {s.provider} · {s.email}
+            <span className="flex min-w-0 flex-col gap-1">
+              <span>{s.provider}</span>
+              <span className="break-all text-muted-foreground">{s.email}</span>
             </span>
             <Button variant="outline" size="sm" onClick={() => onUnlink(s.provider)}>
               해제
@@ -281,7 +284,7 @@ function PasswordCard({ isLdap, ldapEligible }: { isLdap: boolean; ldapEligible:
   }, [confirm, current, isLdap, next]);
 
   return (
-    <Card>
+    <Card className="settings-section">
       <CardHeader>
         <CardTitle>{isLdap ? '비밀번호 변경' : '비밀번호 설정'}</CardTitle>
         <CardDescription>
@@ -365,7 +368,7 @@ function EmailChangeCard({
   }, [allowed, newEmail]);
 
   return (
-    <Card>
+    <Card className="settings-section">
       <CardHeader>
         <CardTitle>이메일 변경</CardTitle>
         <CardDescription>
@@ -506,7 +509,7 @@ function ClientCreateForm({
   }, [created]);
 
   return (
-    <Card>
+    <Card className="settings-section">
       <CardHeader>
         <CardTitle>새 OIDC 클라이언트</CardTitle>
         <CardDescription>리다이렉트 URI는 한 줄에 하나씩 입력해 주세요.</CardDescription>
@@ -628,7 +631,7 @@ function ClientItem({
   }, [client, onDeleted, onError]);
 
   return (
-    <Card>
+    <Card className="settings-section">
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
           {client.clientName ?? client.clientId}
@@ -636,7 +639,7 @@ function ClientItem({
             {client.clientId}
           </code>
         </CardTitle>
-        <CardDescription>인증 방식 · {client.tokenEndpointAuthMethod}</CardDescription>
+        <CardDescription>인증 방식: {client.tokenEndpointAuthMethod}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-1.5">
@@ -827,8 +830,8 @@ function SettingsPage() {
     return (
       <AuthShell requestLabel="계정 관리" requestName="보안 및 프로필 설정" wide>
         <div className="card-heading">
-          <p>인증 필요</p>
           <h1>로그인이 필요합니다</h1>
+          <p>인증 필요</p>
           <span>계정 설정을 이용하려면 먼저 로그인해 주세요.</span>
         </div>
         <div className="inline-actions">
@@ -843,8 +846,8 @@ function SettingsPage() {
   return (
     <AuthShell requestLabel="계정 관리" requestName="보안 및 프로필 설정" wide>
       <div className="card-heading">
-        <p>내 계정</p>
         <h1>계정 설정</h1>
+        <p>내 계정</p>
         <span>프로필과 OIDC 클라이언트 접근 권한을 관리하세요.</span>
       </div>
 

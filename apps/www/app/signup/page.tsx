@@ -33,8 +33,8 @@ function SignupForm() {
   return (
     <AuthShell requestLabel="계정 만들기" requestName="Infinite Studio 계정">
       <div className="card-heading">
-        <p>회원가입</p>
         <h1>계정 만들기</h1>
+        <p>회원가입</p>
         <span>Infinite Studio 계정으로 모든 서비스를 더 편리하게 이용하세요.</span>
       </div>
 

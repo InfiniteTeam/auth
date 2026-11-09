@@ -6,7 +6,14 @@ import { useSession } from '@inftkr/auth-core/react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -67,7 +74,11 @@ function ClientCard({
   const [pending, setPending] = useState(false);
 
   const onRotate = useCallback(async () => {
-    if (!window.confirm(`"${client.clientName ?? client.clientId}"의 시크릿을 회전할까요? 기존 시크릿은 즉시 무효화됩니다.`)) {
+    if (
+      !window.confirm(
+        `"${client.clientName ?? client.clientId}"의 시크릿을 회전할까요? 기존 시크릿은 즉시 무효화됩니다.`,
+      )
+    ) {
       return;
     }
     setPending(true);
@@ -123,15 +134,17 @@ function ClientCard({
   }, [client, onChanged, onError]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="grid gap-5 rounded-none border-0 border-b bg-transparent py-6 ring-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+      <CardHeader className="min-w-0 px-0">
         <CardTitle className="flex flex-wrap items-center gap-2">
           {client.clientName ?? client.clientId}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{client.clientId}</code>
+          <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+            {client.clientId}
+          </code>
         </CardTitle>
-        <CardDescription>인증 방식 · {client.tokenEndpointAuthMethod}</CardDescription>
+        <CardDescription>인증 방식: {client.tokenEndpointAuthMethod}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="min-w-0 px-0 flex flex-col gap-3">
         <div className="flex flex-wrap gap-1.5">
           {client.scopes.map((scope) => (
             <Badge key={scope} variant="outline">
@@ -141,8 +154,13 @@ function ClientCard({
         </div>
         {canEdit ? (
           <div className="flex flex-col gap-2">
-            <Label>리다이렉트 URI (한 줄에 하나씩)</Label>
-            <Textarea value={uris} onChange={(e) => setUris(e.target.value)} rows={3} />
+            <Label htmlFor={`redirect-${client.clientId}`}>리다이렉트 URI (한 줄에 하나씩)</Label>
+            <Textarea
+              id={`redirect-${client.clientId}`}
+              value={uris}
+              onChange={(e) => setUris(e.target.value)}
+              rows={3}
+            />
           </div>
         ) : (
           <ul className="space-y-0.5">
@@ -155,7 +173,7 @@ function ClientCard({
         )}
       </CardContent>
       {canEdit || canDelete ? (
-        <CardFooter className="flex flex-wrap gap-2">
+        <CardFooter className="flex flex-wrap gap-2 rounded-none border-0 bg-transparent p-0 md:col-start-2">
           {canEdit ? (
             <>
               <Button size="sm" variant="outline" disabled={pending} onClick={onSaveUris}>
@@ -177,7 +195,13 @@ function ClientCard({
   );
 }
 
-function CreateCard({ onCreated, onError }: { onCreated: () => void; onError: (m: string) => void }) {
+function CreateCard({
+  onCreated,
+  onError,
+}: {
+  onCreated: () => void;
+  onError: (m: string) => void;
+}) {
   const [name, setName] = useState('');
   const [uris, setUris] = useState('');
   const [pending, setPending] = useState(false);
@@ -188,14 +212,24 @@ function CreateCard({ onCreated, onError }: { onCreated: () => void; onError: (m
         <CardTitle>새 OIDC 클라이언트</CardTitle>
         <CardDescription>리다이렉트 URI는 한 줄에 하나씩 입력해 주세요.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <Label htmlFor="new-client-name">클라이언트 이름</Label>
-          <Input id="new-client-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={64} />
+          <Input
+            id="new-client-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={64}
+          />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="new-redirect-uris">리다이렉트 URI</Label>
-          <Textarea id="new-redirect-uris" value={uris} onChange={(e) => setUris(e.target.value)} rows={3} />
+          <Textarea
+            id="new-redirect-uris"
+            value={uris}
+            onChange={(e) => setUris(e.target.value)}
+            rows={3}
+          />
         </div>
       </CardContent>
       <CardFooter>
@@ -212,7 +246,10 @@ function CreateCard({ onCreated, onError }: { onCreated: () => void; onError: (m
             }
             setPending(true);
             try {
-              await createClient({ clientName: name.trim() || undefined, redirectUris: list });
+              await createClient({
+                clientName: name.trim() || undefined,
+                redirectUris: list,
+              });
               setName('');
               setUris('');
               onError('');
@@ -240,8 +277,12 @@ function ClientsPage() {
   const [secret, setSecret] = useState<CreateOidcClientResult | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
-  const canEdit = Boolean(session && hasPermissions(session.user.permissions, PermissionFlags.OidcClientCreate));
-  const canDelete = Boolean(session && hasPermissions(session.user.permissions, PermissionFlags.OidcClientDelete));
+  const canEdit = Boolean(
+    session && hasPermissions(session.user.permissions, PermissionFlags.OidcClientCreate),
+  );
+  const canDelete = Boolean(
+    session && hasPermissions(session.user.permissions, PermissionFlags.OidcClientDelete),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -264,7 +305,7 @@ function ClientsPage() {
   const refresh = useCallback(() => setReloadKey((k) => k + 1), []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {error ? (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -278,7 +319,15 @@ function ClientsPage() {
           </Button>
         </div>
       ) : null}
-      {showCreate ? <CreateCard onCreated={() => { setShowCreate(false); refresh(); }} onError={setError} /> : null}
+      {showCreate ? (
+        <CreateCard
+          onCreated={() => {
+            setShowCreate(false);
+            refresh();
+          }}
+          onError={setError}
+        />
+      ) : null}
       <Separator />
       {loading ? (
         <div className="flow-loading" role="status">
@@ -286,9 +335,17 @@ function ClientsPage() {
           클라이언트 목록을 불러오는 중입니다.
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           {clients.map((c) => (
-            <ClientCard key={c.clientId} client={c} canEdit={canEdit} canDelete={canDelete} onChanged={refresh} onSecret={setSecret} onError={setError} />
+            <ClientCard
+              key={c.clientId}
+              client={c}
+              canEdit={canEdit}
+              canDelete={canDelete}
+              onChanged={refresh}
+              onSecret={setSecret}
+              onError={setError}
+            />
           ))}
         </div>
       )}

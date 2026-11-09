@@ -5,11 +5,24 @@ import { PermissionFlags } from '@inftkr/auth-core';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AdminGuard } from '@/components/admin-guard';
-import { AdminApiError, getAdminMeta, listSettings, setSetting, type AdminSetting } from '@/lib/admin';
+import {
+  AdminApiError,
+  getAdminMeta,
+  listSettings,
+  setSetting,
+  type AdminSetting,
+} from '@/lib/admin';
 
 function secretDisplay(s: AdminSetting): string {
   if (!s.secret) return String(s.value ?? '');
@@ -62,8 +75,8 @@ function SettingRow({ setting, onChanged }: { setting: AdminSetting; onChanged: 
   }, [onChanged, setting.key]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="grid gap-5 rounded-none border-0 border-b bg-transparent py-6 ring-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+      <CardHeader className="min-w-0 px-0">
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
           {setting.label}
           <Badge variant="outline">{setting.source === 'override' ? '재정의' : '환경값'}</Badge>
@@ -71,15 +84,22 @@ function SettingRow({ setting, onChanged }: { setting: AdminSetting; onChanged: 
         </CardTitle>
         <CardDescription className="font-mono text-xs">{setting.key}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2">
-        <p className="text-sm text-muted-foreground">현재값 · {secretDisplay(setting)}</p>
+      <CardContent className="min-w-0 px-0 flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">현재값: {secretDisplay(setting)}</p>
         <div className="flex flex-col gap-2">
-          <Label>새 값 {setting.secret ? '(비워두면 변경 없음)' : null}</Label>
-          <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={setting.secret ? '새 시크릿 입력' : '새 값 입력'} />
+          <Label htmlFor={`setting-${setting.key}`}>
+            새 값 {setting.secret ? '(비워두면 변경 없음)' : null}
+          </Label>
+          <Input
+            id={`setting-${setting.key}`}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={setting.secret ? '새 시크릿 입력' : '새 값 입력'}
+          />
         </div>
         {message ? <p className="text-xs text-muted-foreground">{message}</p> : null}
       </CardContent>
-      <CardFooter className="flex gap-2">
+      <CardFooter className="flex flex-wrap gap-2 rounded-none border-0 bg-transparent p-0 md:col-start-2">
         <Button size="sm" disabled={pending} onClick={save}>
           저장
         </Button>
@@ -95,7 +115,10 @@ function SettingRow({ setting, onChanged }: { setting: AdminSetting; onChanged: 
 
 function ProvidersPage() {
   const [settings, setSettings] = useState<AdminSetting[]>([]);
-  const [meta, setMeta] = useState<{ githubCallbackUrl: string; discordCallbackUrl: string } | null>(null);
+  const [meta, setMeta] = useState<{
+    githubCallbackUrl: string;
+    discordCallbackUrl: string;
+  } | null>(null);
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -109,7 +132,8 @@ function ProvidersPage() {
         }
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof AdminApiError ? err.message : '설정을 불러오지 못했습니다.');
+        if (!cancelled)
+          setError(err instanceof AdminApiError ? err.message : '설정을 불러오지 못했습니다.');
       });
     return () => {
       cancelled = true;
@@ -119,7 +143,7 @@ function ProvidersPage() {
   const refresh = useCallback(() => setReloadKey((k) => k + 1), []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {error ? (
         <Alert variant="destructive">
           <AlertTitle>오류</AlertTitle>
@@ -130,11 +154,17 @@ function ProvidersPage() {
         <Card>
           <CardHeader>
             <CardTitle>콜백 URL</CardTitle>
-            <CardDescription>소셜 개발자 콘솔에 등록된 리다이렉트 URI와 일치해야 합니다.</CardDescription>
+            <CardDescription>
+              소셜 개발자 콘솔에 등록된 리다이렉트 URI와 일치해야 합니다.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-1 font-mono text-xs">
-            <p className="break-all">GitHub · {meta.githubCallbackUrl}</p>
-            <p className="break-all">Discord · {meta.discordCallbackUrl}</p>
+          <CardContent className="flex flex-col gap-3 text-sm">
+            <p className="break-all">
+              GitHub: <code>{meta.githubCallbackUrl}</code>
+            </p>
+            <p className="break-all">
+              Discord: <code>{meta.discordCallbackUrl}</code>
+            </p>
           </CardContent>
         </Card>
       ) : null}

@@ -28,8 +28,8 @@ function LogoutFlow() {
   return (
     <AuthShell requestLabel="로그아웃" requestName="Infinite Studio 계정">
       <div className="card-heading">
-        <p>계정 보안</p>
         <h1>{failed ? '다시 시도해 주세요' : '로그아웃 중입니다'}</h1>
+        <p>계정 보안</p>
         <span>{failed ? '로그아웃 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.' : '곧 첫 화면으로 이동합니다.'}</span>
       </div>
       <div className="flow-loading" role="status">

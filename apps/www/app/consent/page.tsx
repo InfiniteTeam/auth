@@ -50,18 +50,18 @@ export default async function ConsentPage({ searchParams }: PageProps) {
   return (
     <AuthShell requestLabel="권한 요청" requestName={clientName}>
       <div className="card-heading">
-        <p>권한 확인</p>
         <h1>{clientName} 연결</h1>
+        <p>권한 확인</p>
         <span>
           {clientName}에서 다음 정보를 요청합니다. 동의하면 연결이 계속됩니다.
         </span>
       </div>
       {redirectUrl && redirectUrl.startsWith("/") ? (
         <>
-          <div className="messages">
+          <div className="permission-list">
             {scopes.length > 0 ? (
               scopes.map((item) => (
-                <p key={item} className="message message-info">
+                <p key={item} className="permission-item">
                   {SCOPE_LABELS[item] ?? `추가 권한: ${item}`}
                 </p>
               ))

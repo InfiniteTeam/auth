@@ -25,7 +25,8 @@ function WebFingerPage() {
         }
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof AdminApiError ? err.message : '메타 정보를 불러오지 못했습니다.');
+        if (!cancelled)
+          setError(err instanceof AdminApiError ? err.message : '메타 정보를 불러오지 못했습니다.');
       });
     return () => {
       cancelled = true;
@@ -33,7 +34,9 @@ function WebFingerPage() {
   }, []);
 
   const descriptorUrl =
-    meta && resource ? `${meta.issuerUrl}/.well-known/webfinger?resource=${encodeURIComponent(resource)}` : '';
+    meta && resource
+      ? `${meta.issuerUrl}/.well-known/webfinger?resource=${encodeURIComponent(resource)}`
+      : '';
 
   return (
     <div className="flex flex-col gap-4">
@@ -43,25 +46,30 @@ function WebFingerPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
-      <Card>
-        <CardHeader>
+      <Card className="grid gap-5 rounded-none border-0 border-b bg-transparent py-6 ring-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+        <CardHeader className="min-w-0 px-0">
           <CardTitle>WebFinger 디스커버리</CardTitle>
           <CardDescription>
-            WebFinger에는 자격증명이 없습니다. 루트 도메인의 리소스가 OIDC 발급자로 해석되는지 확인합니다.
+            WebFinger에는 자격증명이 없습니다. 루트 도메인의 리소스가 OIDC 발급자로 해석되는지
+            확인합니다.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm">
+        <CardContent className="min-w-0 px-0 flex flex-col gap-4 text-sm">
           {meta ? (
             <>
               <p className="break-all">
-                Issuer · <code>{meta.issuerUrl}</code>
+                Issuer: <code>{meta.issuerUrl}</code>
               </p>
               <p className="break-all">
-                Root · <code>{meta.rootDomain}</code>
+                Root: <code>{meta.rootDomain}</code>
               </p>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="wf-resource">리소스 (acct: URI)</Label>
-                <Input id="wf-resource" value={resource} onChange={(e) => setResource(e.target.value)} />
+                <Input
+                  id="wf-resource"
+                  value={resource}
+                  onChange={(e) => setResource(e.target.value)}
+                />
               </div>
               {descriptorUrl ? (
                 <p className="break-all font-mono text-xs text-muted-foreground">{descriptorUrl}</p>

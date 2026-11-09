@@ -20,10 +20,10 @@ export function AdminSiteHeader() {
   const title = TITLES[pathname] ?? '관리';
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+    <header className="flex min-h-20 shrink-0 items-center gap-3 border-b px-5 sm:px-8 lg:px-10">
       <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-      <h1 className="text-base font-medium">{title}</h1>
+      <Separator orientation="vertical" className="mx-2 data-vertical:h-4 data-vertical:self-center" />
+      <h1 className="min-w-0 text-xl font-semibold break-words">{title}</h1>
     </header>
   );
 }

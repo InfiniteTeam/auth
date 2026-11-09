@@ -31,8 +31,8 @@ function SocialErrorContent() {
   return (
     <AuthShell requestLabel="로그인 실패" requestName="Infinite Studio 계정">
       <div className="card-heading">
-        <p>잠깐, 문제가 발생했어요</p>
         <h1>{providerLabel} 로그인을 완료하지 못했습니다</h1>
+        <p>잠깐, 문제가 발생했어요</p>
         <span>{message}</span>
       </div>
       <div className="inline-actions">

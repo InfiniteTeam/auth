@@ -79,8 +79,8 @@ function VerifyEmailForm() {
   return (
     <AuthShell requestLabel="이메일 확인" requestName="Infinite Studio 계정">
       <div className="card-heading">
-        <p>계정 생성 완료를 앞두고 있어요</p>
         <h1>이메일 주소를 확인해 주세요</h1>
+        <p>계정 생성 완료를 앞두고 있어요</p>
         <span>{emailLabel} 로그인으로 계정을 만드는 마지막 단계입니다.</span>
       </div>
 

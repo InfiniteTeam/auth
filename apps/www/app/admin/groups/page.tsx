@@ -33,7 +33,8 @@ function GroupsPage() {
         if (!cancelled) setGroups(list);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof AdminApiError ? err.message : '그룹을 불러오지 못했습니다.');
+        if (!cancelled)
+          setError(err instanceof AdminApiError ? err.message : '그룹을 불러오지 못했습니다.');
       });
     return () => {
       cancelled = true;
@@ -51,11 +52,20 @@ function GroupsPage() {
         </Alert>
       ) : null}
       <Card>
-        <CardHeader>
+        <CardHeader className="min-w-0">
           <CardTitle className="text-base">새 그룹</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
-          <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="그룹 이름" className="max-w-xs" />
+        <CardContent className="flex flex-wrap items-end gap-2">
+          <Label htmlFor="new-group-name" className="w-full">
+            그룹 이름
+          </Label>
+          <Input
+            id="new-group-name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="그룹 이름"
+            className="max-w-xs"
+          />
           <Button
             size="sm"
             onClick={async () => {
@@ -75,23 +85,29 @@ function GroupsPage() {
         </CardContent>
       </Card>
       {groups.map((g) => (
-        <Card key={g.id}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
+        <Card
+          key={g.id}
+          className="grid gap-5 rounded-none border-0 border-b bg-transparent py-6 ring-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]"
+        >
+          <CardHeader className="min-w-0">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               {g.displayName}
               <Badge variant="outline">#{g.id}</Badge>
               <Badge variant="outline">{g.members.length}명</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-2">
+          <CardContent className="min-w-0 flex flex-col gap-4">
             <div className="flex flex-wrap gap-1.5">
               {g.members.map((m) => (
-                <span key={m} className="flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-mono text-xs">
+                <span
+                  key={m}
+                  className="flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-sm"
+                >
                   {m}
                   <button
                     type="button"
                     aria-label={`${m} 제거`}
-                    className="text-muted-foreground hover:text-foreground"
+                    className="flex size-11 items-center justify-center rounded text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
                     onClick={async () => {
                       try {
                         await removeGroupMember(g.id, m);
@@ -107,7 +123,7 @@ function GroupsPage() {
                 </span>
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-end gap-2">
               <div className="flex flex-col gap-1">
                 <Label htmlFor={`member-${g.id}`}>멤버 추가 (uid)</Label>
                 <Input

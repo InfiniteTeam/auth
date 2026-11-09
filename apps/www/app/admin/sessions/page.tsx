@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { AdminGuard } from '@/components/admin-guard';
 import { AdminApiError, listSessions, revokeSession, type AdminSession } from '@/lib/admin';
 
@@ -24,7 +25,8 @@ function SessionsPage() {
         if (!cancelled) setSessions(list);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof AdminApiError ? err.message : '세션을 불러오지 못했습니다.');
+        if (!cancelled)
+          setError(err instanceof AdminApiError ? err.message : '세션을 불러오지 못했습니다.');
       });
     return () => {
       cancelled = true;
@@ -42,31 +44,46 @@ function SessionsPage() {
         </Alert>
       ) : null}
       <form
-        className="flex gap-2"
+        className="flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           setApplied(filter.trim());
         }}
       >
-        <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="userId로 필터" />
+        <Label htmlFor="session-filter" className="w-full">
+          사용자 ID
+        </Label>
+        <Input
+          id="session-filter"
+          className="min-w-0 flex-1"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="userId로 필터"
+        />
         <Button type="submit" size="sm" variant="outline">
           조회
         </Button>
       </form>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col">
         {sessions.map((s) => (
-          <Card key={s.id}>
-            <CardHeader>
+          <Card
+            key={s.id}
+            className="grid gap-5 rounded-none border-0 border-b bg-transparent py-6 ring-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]"
+          >
+            <CardHeader className="min-w-0 px-0">
               <CardTitle className="flex flex-wrap items-center gap-2 text-base">
                 {s.email}
-                <Badge variant={s.active ? 'default' : 'outline'}>{s.active ? '활성' : '비활성'}</Badge>
+                <Badge variant={s.active ? 'default' : 'outline'}>
+                  {s.active ? '활성' : '비활성'}
+                </Badge>
                 <Badge variant="outline">{s.provider}</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <CardContent className="min-w-0 px-0 flex flex-col gap-3 text-sm text-muted-foreground">
               <p className="break-all font-mono text-xs">{s.id}</p>
               <p>
-                발급 {new Date(s.issuedAt).toLocaleString('ko-KR')} · 만료 {new Date(s.expiresAt).toLocaleString('ko-KR')}
+                <span className="block">발급 {new Date(s.issuedAt).toLocaleString('ko-KR')}</span>
+                <span className="block">만료 {new Date(s.expiresAt).toLocaleString('ko-KR')}</span>
               </p>
               {s.active ? (
                 <div>

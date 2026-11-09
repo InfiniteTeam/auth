@@ -75,8 +75,8 @@ function LoginForm() {
   return (
     <AuthShell requestLabel="로그인 요청" requestName="Infinite Studio 계정">
       <div className="card-heading">
-        <p>다시 만나 반가워요</p>
         <h1>계정에 로그인</h1>
+        <p>다시 만나 반가워요</p>
         <span>Infinite Studio 계정으로 계속합니다.</span>
       </div>
 
@@ -103,10 +103,12 @@ function LoginForm() {
             autoComplete="email"
             placeholder="you@inftkr.kr"
             className="h-11"
+            aria-invalid={Boolean(form.formState.errors.email)}
+            aria-describedby={form.formState.errors.email ? 'email-error' : undefined}
             {...form.register('email')}
           />
           {form.formState.errors.email ? (
-            <p className="text-sm text-destructive" role="alert">
+            <p id="email-error" className="text-sm text-destructive" role="alert">
               {form.formState.errors.email.message}
             </p>
           ) : null}
@@ -119,10 +121,12 @@ function LoginForm() {
             autoComplete="current-password"
             placeholder="••••••••"
             className="h-11"
+            aria-invalid={Boolean(form.formState.errors.password)}
+            aria-describedby={form.formState.errors.password ? 'password-error' : undefined}
             {...form.register('password')}
           />
           {form.formState.errors.password ? (
-            <p className="text-sm text-destructive" role="alert">
+            <p id="password-error" className="text-sm text-destructive" role="alert">
               {form.formState.errors.password.message}
             </p>
           ) : null}
@@ -132,7 +136,7 @@ function LoginForm() {
         </Button>
       </form>
 
-      <div className="mt-6 flex flex-col gap-3">
+      <div className="auth-social-options mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Button variant="outline" size="lg" disabled={!!socialPending} onClick={() => onSocial('github')}>
           {socialPending === 'github' ? 'GitHub 연결 중…' : 'GitHub로 계속하기'}
         </Button>

@@ -1,0 +1,106 @@
+/* Hallmark · shared app foundation · v2.0.0 */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+  html,
+  body {
+    overflow-x: clip;
+    min-height: 100%;
+  }
+  html {
+    scrollbar-color: var(--color-muted) var(--color-paper);
+  }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+    font-size: var(--text-md);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    caret-color: var(--primary);
+  }
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  h1,
+  h2,
+  h3 {
+    min-width: 0;
+    overflow-wrap: break-word;
+    text-wrap: balance;
+    font-family: var(--font-display);
+    font-weight: var(--display-weight);
+    letter-spacing: var(--tracking-display);
+    line-height: 1.3;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+  button,
+  a {
+    -webkit-tap-highlight-color: var(--color-clear);
+  }
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+  a {
+    text-decoration: none;
+    text-underline-offset: 4px;
+  }
+  code,
+  pre {
+    font-family: var(--font-code);
+  }
+  button:active:not(:disabled),
+  [role="button"]:active:not([aria-disabled="true"]) {
+    transform: translateY(1px);
+  }
+  button:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  [aria-busy="true"] {
+    cursor: progress;
+  }
+  [hidden] {
+    display: none !important;
+  }
+}
+:focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 3px;
+  transition-duration: 0s !important;
+}
+input:focus-visible,
+textarea:focus-visible {
+  outline-offset: -3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

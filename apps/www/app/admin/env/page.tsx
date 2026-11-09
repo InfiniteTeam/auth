@@ -5,7 +5,14 @@ import { PermissionFlags } from '@inftkr/auth-core';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AdminGuard } from '@/components/admin-guard';
@@ -15,7 +22,7 @@ const GROUP_TITLES: Record<string, string> = {
   social: '소셜 로그인',
   oidc: 'OIDC',
   smtp: '이메일 (SMTP)',
-  domains: '도메인·정책',
+  domains: '도메인 및 정책',
 };
 
 /**
@@ -46,8 +53,8 @@ function EnvRow({ setting, onChanged }: { setting: AdminSetting; onChanged: () =
   }, [draft, setting.secret]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="grid gap-5 rounded-none border-0 border-b bg-transparent py-6 ring-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+      <CardHeader className="min-w-0 px-0">
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
           {setting.label}
           <Badge variant="outline">{setting.source === 'override' ? '재정의' : '환경값'}</Badge>
@@ -56,18 +63,30 @@ function EnvRow({ setting, onChanged }: { setting: AdminSetting; onChanged: () =
         </CardTitle>
         <CardDescription className="font-mono text-xs">{setting.key}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2">
+      <CardContent className="min-w-0 px-0 flex flex-col gap-3">
         {KEY_HINTS[setting.key] ? (
           <p className="text-xs text-muted-foreground">{KEY_HINTS[setting.key]}</p>
         ) : null}
         <p className="text-sm text-muted-foreground">
-          현재값 · {setting.secret ? (setting.configured ? '•••••••• (설정됨)' : '(미설정)') : JSON.stringify(setting.value)}
+          현재값:{' '}
+          {setting.secret
+            ? setting.configured
+              ? '•••••••• (설정됨)'
+              : '(미설정)'
+            : JSON.stringify(setting.value)}
         </p>
-        <Label>새 값 {setting.secret ? '(비워두면 변경 없음)' : '(JSON)'}</Label>
-        <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={setting.secret ? '새 시크릿' : 'JSON 값'} />
+        <Label htmlFor={`setting-${setting.key}`}>
+          새 값 {setting.secret ? '(비워두면 변경 없음)' : '(JSON)'}
+        </Label>
+        <Input
+          id={`setting-${setting.key}`}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={setting.secret ? '새 시크릿' : 'JSON 값'}
+        />
         {message ? <p className="text-xs text-muted-foreground">{message}</p> : null}
       </CardContent>
-      <CardFooter className="flex gap-2">
+      <CardFooter className="flex flex-wrap gap-2 rounded-none border-0 bg-transparent p-0 md:col-start-2">
         <Button
           size="sm"
           disabled={pending}
@@ -134,7 +153,8 @@ function EnvPage() {
         if (!cancelled) setSettings(list);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof AdminApiError ? err.message : '설정을 불러오지 못했습니다.');
+        if (!cancelled)
+          setError(err instanceof AdminApiError ? err.message : '설정을 불러오지 못했습니다.');
       });
     return () => {
       cancelled = true;
@@ -157,8 +177,8 @@ function EnvPage() {
         <Alert variant="destructive">
           <AlertTitle>재시작 필요 ({pendingRestart.length}건)</AlertTitle>
           <AlertDescription>
-            아래 항목은 서버 재시작 후에 반영됩니다: {pendingRestart.map((s) => s.key).join(', ')}. 서버에 직접
-            접속해 `cd deploy && docker compose up -d --build` 로 재부팅해 주세요.
+            아래 항목은 서버 재시작 후에 반영됩니다: {pendingRestart.map((s) => s.key).join(', ')}.
+            서버에 직접 접속해 `cd deploy && docker compose up -d --build` 로 재부팅해 주세요.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -175,10 +195,16 @@ function EnvPage() {
       <Card>
         <CardHeader>
           <CardTitle>서버 재부팅 안내</CardTitle>
-          <CardDescription>재시작 필요 항목은 어드민이 서버에 직접 접속해 재부팅합니다.</CardDescription>
+          <CardDescription>
+            재시작 필요 항목은 어드민이 서버에 직접 접속해 재부팅합니다.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="code-box">{'cd deploy\ndocker compose ps\ndocker compose up -d --build\ndocker compose logs -f backend'}</div>
+          <div className="code-box">
+            {
+              'cd deploy\ndocker compose ps\ndocker compose up -d --build\ndocker compose logs -f backend'
+            }
+          </div>
         </CardContent>
       </Card>
     </div>
