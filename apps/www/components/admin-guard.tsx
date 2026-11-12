@@ -19,7 +19,9 @@ export function AdminGuard({
   children: ReactNode;
   required?: bigint | string;
 }) {
-  const { session, isLoading } = useSession({ baseUrl: BACKEND_URL });
+  const { session, isLoading, error, refresh } = useSession({
+    baseUrl: BACKEND_URL,
+  });
 
   if (isLoading) {
     return (
@@ -31,6 +33,22 @@ export function AdminGuard({
   }
 
   if (!session) {
+    if (error) {
+      return (
+        <Alert variant="destructive">
+          <AlertTitle>계정 확인 오류</AlertTitle>
+          <AlertDescription>계정 정보를 불러오지 못했습니다.</AlertDescription>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-3"
+            onClick={refresh}
+          >
+            다시 시도
+          </Button>
+        </Alert>
+      );
+    }
     return (
       <div className="flex flex-col gap-4">
         <Alert>

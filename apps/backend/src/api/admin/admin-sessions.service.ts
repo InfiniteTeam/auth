@@ -11,18 +11,23 @@ export class AdminSessionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Lists sessions, newest first, with optional owner/active filters. */
-  async list(options: { userId?: string; activeOnly?: boolean; limit?: number }): Promise<AdminSessionDto[]> {
+  async list(options: {
+    userId?: string;
+    activeOnly?: boolean;
+    limit?: number;
+  }): Promise<AdminSessionDto[]> {
     const limit = Math.max(1, Math.min(options.limit ?? 50, 200));
     const rows = await this.prisma.session.findMany({
-      where: { ...(options.userId ? { userId: options.userId } : {}) },
+      where: {
+        ...(options.userId ? { userId: options.userId } : {}),
+        ...(options.activeOnly === false
+          ? {}
+          : { revokedAt: null, expiresAt: { gt: new Date() } }),
+      },
       orderBy: { issuedAt: "desc" },
-      take: options.activeOnly === false ? limit : limit * 2,
+      take: limit,
     });
-    const now = Date.now();
-    const mapped = rows.map((row) => this.toDto(row));
-    const filtered = options.activeOnly === false ? mapped : mapped.filter((s) => s.active);
-    void now;
-    return filtered.slice(0, limit);
+    return rows.map((row) => this.toDto(row));
   }
 
   /** Revokes a session by id. Returns true when a row was revoked. */

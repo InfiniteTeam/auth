@@ -291,10 +291,13 @@ export async function removeGroupMember(groupId: number, userId: string): Promis
   );
 }
 
-/** Lists sessions. */
-export async function listSessions(userId?: string): Promise<AdminSession[]> {
-  const params = userId ? `?userId=${encodeURIComponent(userId)}` : '';
-  const data = await apiRequest<{ sessions: AdminSession[] }>(`/api/v1/admin/sessions${params}`);
+/** Lists the newest sessions, optionally including inactive sessions. */
+export async function listSessions(userId?: string, activeOnly = true): Promise<AdminSession[]> {
+  const params = new URLSearchParams();
+  if (userId) params.set('userId', userId);
+  if (!activeOnly) params.set('activeOnly', 'false');
+  const query = params.size ? `?${params}` : '';
+  const data = await apiRequest<{ sessions: AdminSession[] }>(`/api/v1/admin/sessions${query}`);
   return data.sessions;
 }
 

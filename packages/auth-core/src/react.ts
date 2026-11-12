@@ -22,21 +22,27 @@ export interface SessionState {
   isLoading: boolean;
   /** Set when the fetch failed unexpectedly. */
   error?: Error;
+  /** Fetch the current session again. */
+  refresh: () => void;
 }
 
 /**
  * React hook that fetches and observes the current session.
  *
- * When sessions are managed elsewhere (e.g. after sign-in/out), remount the
- * hook or toggle `enabled` to refresh the state.
+ * Call `refresh` to fetch the session again after it changes or a request fails.
  */
 export function useSession(options: UseSessionOptions = {}): SessionState {
   const baseUrl = options.baseUrl ?? "";
   const enabled = options.enabled ?? true;
-  const [state, setState] = useState<SessionState>({
+  const [state, setState] = useState<Omit<SessionState, "refresh">>({
     session: null,
     isLoading: true,
   });
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refresh = useCallback(() => {
+    setState({ session: null, isLoading: true });
+    setRefreshKey((key) => key + 1);
+  }, []);
 
   useEffect(() => {
     if (!enabled) {
@@ -45,6 +51,7 @@ export function useSession(options: UseSessionOptions = {}): SessionState {
     }
 
     let cancelled = false;
+    setState({ session: null, isLoading: true });
     const client = new AuthApiClient({ baseUrl });
 
     client
@@ -63,9 +70,9 @@ export function useSession(options: UseSessionOptions = {}): SessionState {
     return () => {
       cancelled = true;
     };
-  }, [baseUrl, enabled]);
+  }, [baseUrl, enabled, refreshKey]);
 
-  return state;
+  return { ...state, refresh };
 }
 
 /**
