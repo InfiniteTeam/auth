@@ -1,0 +1,52 @@
+:root {
+  --color-paper: #151824;
+  --color-paper-2: #181b28;
+  --color-paper-3: #1d2130;
+  --color-ink: #f7faf9;
+  --color-ink-2: #d7dedf;
+  --color-muted: #a8b1bc;
+  --color-rule: rgba(255, 255, 255, 0.16);
+  --color-accent: #40d88c;
+  --color-accent-hover: #6ee7b7;
+  --color-accent-ink: #071b13;
+  --color-focus: #5eead4;
+  --color-overlay: hsla(0, 0%, 0%, 0.4);
+  --font-display:
+    Pretendard, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body:
+    Pretendard, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-title: clamp(1.25rem, 0.75vw + 0.875rem, 1.625rem);
+  --text-lead: clamp(1.125rem, 0.35vw + 1rem, 1.375rem);
+  --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+  --text-section: clamp(2rem, 2.5vw + 1rem, 3.5rem);
+  --space-2xs: 4px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+  --section-gap-s: 120px;
+  --container: 1440px;
+  --gutter: 64px;
+  --gap-columns: 32px;
+  --radius-card: 4px;
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (max-width: 60rem) {
+  :root {
+    --gutter: 24px;
+    --section-gap-s: 80px;
+  }
+}
+@media (max-width: 40rem) {
+  :root {
+    --gutter: 16px;
+    --section-gap-s: 56px;
+    --gap-columns: 16px;
+  }
+}

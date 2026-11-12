@@ -1,0 +1,48 @@
+html,
+body {
+  overflow-x: clip;
+}
+html {
+  scrollbar-color: var(--color-muted) var(--color-paper);
+}
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: 1.55;
+  caret-color: var(--color-accent);
+}
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+.docs-home h1,
+.docs-home h2,
+.docs-home h3 {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-weight: 650;
+  line-height: 1.08;
+  overflow-wrap: break-word;
+  min-width: 0;
+  text-wrap: balance;
+}
+.docs-home p {
+  margin: 0;
+  text-wrap: pretty;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

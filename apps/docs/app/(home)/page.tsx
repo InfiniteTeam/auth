@@ -1,4 +1,4 @@
-import { Fingerprint, LockKeyhole, ShieldCheck, BookOpenCheck, Code2 } from 'lucide-react';
+import { Fingerprint, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { FeatureCards } from '@/components/feature-cards';
 
 const features = [
@@ -30,42 +30,64 @@ const features = [
 
 export default function HomePage() {
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-6 py-16 md:py-24">
-      <div className="text-center">
-        <p className="mb-4 text-xs font-bold uppercase tracking-[0.15em] text-fd-primary">
-          InfiniteTeam identity platform
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
-          One account,{' '}
-          <span className="bg-gradient-to-r from-[#6ee7b7] to-[#5eead4] bg-clip-text text-transparent">
-            every service
-          </span>
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-fd-muted-foreground md:text-lg">
-          Self-hosted authentication for the InfiniteTeam ecosystem — OAuth 2.0 /
-          OpenID Connect, LDAP identity, WebFinger and social login. The first
-          consuming service is Tailscale (custom OIDC client).
-        </p>
-      </div>
-
-      <FeatureCards features={features} />
-
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <a
-          href="/docs"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#40d88c] px-5 py-2.5 text-sm font-semibold text-[#071b13] transition hover:bg-[#5eead4]"
+    <main className="docs-home">
+      <section className="docs-home__hero">
+        <div className="docs-home__intro">
+          <h1>One account, every service</h1>
+          <p>Self-hosted authentication for the InfiniteTeam ecosystem.</p>
+          <div className="docs-home__actions">
+            <a className="docs-home__action" href="/docs">
+              Read the docs
+            </a>
+            <a
+              className="docs-home__action docs-home__action--quiet"
+              href="https://github.com/InfiniteTeam/auth"
+            >
+              View on GitHub
+            </a>
+          </div>
+        </div>
+        <figure
+          className="docs-home__path"
+          aria-label="Identity flow from LDAP through the OIDC provider to Tailscale"
         >
-          <BookOpenCheck className="size-4" />
-          Read the docs
-        </a>
-        <a
-          href="https://github.com/InfiniteTeam/auth"
-          className="inline-flex items-center gap-2 rounded-lg border border-[--fd-border] px-5 py-2.5 text-sm font-semibold text-fd-foreground transition hover:bg-fd-secondary"
-        >
-          <Code2 className="size-4" />
-          View on GitHub
-        </a>
-      </div>
-    </div>
+          <div className="docs-home__path-node">
+            <strong>lldap</strong>
+            <span>LDAP identity</span>
+          </div>
+          <div className="docs-home__path-node">
+            <strong>Nest.js + oidc-provider</strong>
+            <span>OAuth 2.0 / OIDC</span>
+          </div>
+          <div className="docs-home__path-node">
+            <strong>Tailscale</strong>
+            <span>Custom OIDC client</span>
+          </div>
+          <figcaption>InfiniteTeam identity path</figcaption>
+        </figure>
+      </section>
+
+      <section className="docs-home__section docs-home__overview">
+        <h2>Authentication in one place</h2>
+        <p>
+          OAuth 2.0 / OpenID Connect, LDAP identity, WebFinger and social login
+          serve the InfiniteTeam ecosystem.
+        </p>
+      </section>
+
+      <section className="docs-home__section docs-home__topics">
+        <h2>Read by layer</h2>
+        <FeatureCards features={features} />
+      </section>
+
+      <section className="docs-home__closing">
+        <h2>Start with Tailscale</h2>
+        <p>The first consuming service uses a custom OIDC client.</p>
+      </section>
+      <footer className="docs-home__footer">
+        <span>InfiniteTeam identity platform</span>
+        <a href="/docs">Documentation</a>
+      </footer>
+    </main>
   );
 }
