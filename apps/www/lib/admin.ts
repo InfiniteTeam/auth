@@ -205,6 +205,18 @@ export interface AdminSession {
   active: boolean;
 }
 
+/** Weekly sign-ins and recent persisted admin changes. */
+export interface AdminOverview {
+  weeks: { week: string; count: number }[];
+  changes: { kind: 'client' | 'setting'; label: string; action: 'created' | 'updated'; at: string }[];
+  activeSessions: number;
+}
+
+/** Reads overview statistics without truncating the session history. */
+export async function getAdminOverview(): Promise<AdminOverview> {
+  return apiRequest<AdminOverview>('/api/v1/admin/overview');
+}
+
 /** A platform setting entry as returned by the admin API. */
 export interface AdminSetting {
   key: string;

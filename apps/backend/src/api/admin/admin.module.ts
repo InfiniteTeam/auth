@@ -18,6 +18,8 @@ import { AdminSessionsService } from "./admin-sessions.service.js";
 import { AdminSessionsController } from "./admin-sessions.controller.js";
 import { AdminSettingsService } from "./admin-settings.service.js";
 import { AdminSettingsController } from "./admin-settings.controller.js";
+import { AdminOverviewService } from "./admin-overview.service.js";
+import { AdminOverviewController } from "./admin-overview.controller.js";
 
 @Module({
   imports: [SessionModule, LldapModule],
@@ -27,6 +29,7 @@ import { AdminSettingsController } from "./admin-settings.controller.js";
     AdminGroupsController,
     AdminSessionsController,
     AdminSettingsController,
+    AdminOverviewController,
   ],
   providers: [
     AdminClientsService,
@@ -34,6 +37,7 @@ import { AdminSettingsController } from "./admin-settings.controller.js";
     AdminGroupsService,
     AdminSessionsService,
     AdminSettingsService,
+    AdminOverviewService,
     PermissionsGuard,
     {
       provide: SNOWFLAKE,
