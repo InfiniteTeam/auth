@@ -6,10 +6,12 @@
 import {
   IsEmail,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
   Min,
+  MinLength,
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -46,6 +48,23 @@ export class UpdateAdminUserDto {
   @IsString()
   @MaxLength(128)
   displayName?: string;
+}
+
+/** Payload for `POST /api/v1/admin/users`. */
+export class CreateAdminUserDto {
+  @IsEmail()
+  @MaxLength(256)
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  displayName: string;
+
+  @IsString()
+  @MinLength(8)
+  @MaxLength(256)
+  password: string;
 }
 
 /**

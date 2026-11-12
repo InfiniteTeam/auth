@@ -9,6 +9,7 @@
  */
 
 import { Inject, Injectable } from "@nestjs/common";
+import { DN } from "ldapts";
 import { PermissionBitField } from "@inftkr/shared";
 import type { Role } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
@@ -598,7 +599,7 @@ export class LldapService {
    * Builds the LDAP distinguished name of a user.
    */
   private userDn(uid: string): string {
-    return `uid=${uid},ou=people,${this.config.lldapBaseDn}`;
+    return `${new DN({ uid }).toString()},ou=people,${this.config.lldapBaseDn}`;
   }
 
   /**

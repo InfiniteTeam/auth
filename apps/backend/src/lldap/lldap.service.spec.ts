@@ -80,3 +80,10 @@ describe("LldapService permissions", () => {
     await expect(service.permissionsFor("devuser")).resolves.toBe("0");
   });
 });
+
+describe("LldapService user DN", () => {
+  it("escapes special characters in email-based user ids", () => {
+    const service = new LldapService(config) as unknown as { userDn(uid: string): string };
+    expect(service.userDn("a+b@example.com")).toBe(`uid=a\\+b@example.com,ou=people,${config.lldapBaseDn}`);
+  });
+});
