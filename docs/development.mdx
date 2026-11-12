@@ -106,12 +106,13 @@ pnpm --filter @inftkr/docs build     # static export → apps/docs/out
 ## Releasing packages
 
 `@inftkr/auth-sdk` is the only publishable package so far (MIT, npmjs.org).
-Increment its version before publishing another release. `prepublishOnly`
-builds and re-generates docs.
+Increment its version before staging another release. `prepublishOnly` builds
+and re-generates docs. Approve the staged package with 2FA on npmjs.com to
+publish it.
 
 ```bash
-pnpm --filter @inftkr/auth-sdk publish --dry-run
-pnpm --filter @inftkr/auth-sdk publish --access public
+pnpm --filter @inftkr/auth-sdk stage publish --dry-run
+pnpm --filter @inftkr/auth-sdk stage publish --access public
 ```
 
 ## Branch workflow
