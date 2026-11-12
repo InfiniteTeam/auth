@@ -19,7 +19,11 @@ import {
 import { BACKEND_URL } from '@/lib/auth';
 
 function SessionsPage() {
-  const { session } = useSession({ baseUrl: BACKEND_URL });
+  const {
+    session,
+    error: permissionError,
+    refresh: retryPermission,
+  } = useSession({ baseUrl: BACKEND_URL });
   const [sessions, setSessions] = useState<AdminSession[]>([]);
   const [filter, setFilter] = useState('');
   const [applied, setApplied] = useState('');
@@ -77,6 +81,20 @@ function SessionsPage() {
             onClick={refresh}
           >
             다시 시도
+          </Button>
+        </Alert>
+      ) : null}
+      {permissionError ? (
+        <Alert variant="destructive">
+          <AlertTitle>권한 확인 오류</AlertTitle>
+          <AlertDescription>세션 종료 권한을 확인하지 못했습니다.</AlertDescription>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-3"
+            onClick={retryPermission}
+          >
+            권한 다시 확인
           </Button>
         </Alert>
       ) : null}
