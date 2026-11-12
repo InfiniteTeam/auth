@@ -1,10 +1,10 @@
-name: Stage auth-sdk on npm
+name: Publish auth-sdk on npm
 
 on:
   workflow_dispatch:
 
 jobs:
-  stage:
+  publish:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
@@ -21,4 +21,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @inftkr/auth-sdk... build
       - run: pnpm --filter @inftkr/auth-sdk test
-      - run: pnpm --filter @inftkr/auth-sdk stage publish --no-git-checks --access public
+      - run: pnpm --filter @inftkr/auth-sdk publish --no-git-checks --access public
