@@ -228,6 +228,7 @@ function CreateCard({
             id="new-redirect-uris"
             value={uris}
             onChange={(e) => setUris(e.target.value)}
+            placeholder={'https://app.example.com/callback\nhttps://admin.example.com/callback'}
             rows={3}
           />
         </div>
