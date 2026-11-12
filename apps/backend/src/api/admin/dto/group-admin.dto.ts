@@ -3,7 +3,7 @@
  * (`/api/v1/admin/groups`, lldap-backed).
  */
 
-import { IsInt, IsString, MaxLength, Min } from "class-validator";
+import { IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from "class-validator";
 
 /**
  * Payload for `POST /api/v1/admin/groups`.
@@ -11,6 +11,7 @@ import { IsInt, IsString, MaxLength, Min } from "class-validator";
 export class CreateAdminGroupDto {
   /** Group display name. */
   @IsString()
+  @MinLength(1)
   @MaxLength(64)
   displayName: string;
 }
@@ -20,9 +21,25 @@ export class CreateAdminGroupDto {
  */
 export class UpdateAdminGroupDto {
   /** New group display name. */
+  @IsOptional()
   @IsString()
+  @MinLength(1)
   @MaxLength(64)
-  displayName: string;
+  displayName?: string;
+
+  /** Higher values take precedence; tied groups combine permissions. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1000)
+  priority?: number;
+
+  /** Permission bitfield as a decimal string. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  @Matches(/^(0|[1-9]\d*)$/)
+  permissions?: string;
 }
 
 /**
@@ -49,6 +66,15 @@ export class AdminGroupDto {
 
   /** Ids of member users. */
   members: string[];
+
+  /** Higher values take precedence; tied groups combine permissions. */
+  priority: number;
+
+  /** Permission bitfield as a decimal string. */
+  permissions: string;
+
+  /** Whether this is the immutable platform admin group. */
+  isPlatformAdmin: boolean;
 }
 
 /**

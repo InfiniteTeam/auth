@@ -65,6 +65,14 @@ model Session {
   @@index([userId])
 }
 
+// Authorization policy for an lldap group. Higher priority takes precedence;
+// policies at the same priority combine their permission bits.
+model GroupPolicy {
+  groupId     Int    @id
+  priority    Int    @default(0)
+  permissions String @default("0")
+}
+
 // A social identity (GitHub / Discord) linked to a local user account.
 //
 // `verified` reflects the ephemeral email verification completed at signup;

@@ -34,13 +34,13 @@ export class AdminGroupsController {
     return this.adminGroupsService.create(body.displayName);
   }
 
-  /** Renames a directory group. */
+  /** Updates a directory group's name, priority, or permissions. */
   @Patch(":id")
   @Permissions(PermissionFlags.GroupWrite)
-  @ApiOperation({ summary: "Rename a directory group" })
+  @ApiOperation({ summary: "Update a directory group" })
   @ApiResponse({ status: 200, type: AdminGroupDto })
   async update(@Param("id", ParseIntPipe) id: number, @Body() body: UpdateAdminGroupDto): Promise<AdminGroupDto> {
-    return this.adminGroupsService.update(id, body.displayName);
+    return this.adminGroupsService.update(id, body);
   }
 
   /** Deletes a directory group. */
