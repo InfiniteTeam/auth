@@ -3,7 +3,7 @@
  * (`/api/v1/admin/groups`, lldap-backed).
  */
 
-import { IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from "class-validator";
+import { IsInt, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from "class-validator";
 
 /**
  * Payload for `POST /api/v1/admin/groups`.
@@ -21,21 +21,21 @@ export class CreateAdminGroupDto {
  */
 export class UpdateAdminGroupDto {
   /** New group display name. */
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsString()
   @MinLength(1)
   @MaxLength(64)
   displayName?: string;
 
   /** Higher values take precedence; tied groups combine permissions. */
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsInt()
   @Min(0)
   @Max(1000)
   priority?: number;
 
   /** Permission bitfield as a decimal string. */
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsString()
   @MaxLength(32)
   @Matches(/^(0|[1-9]\d*)$/)

@@ -49,9 +49,22 @@ function GroupEditor({
   onError: (message: string) => void;
 }) {
   const [name, setName] = useState(group.displayName);
-  const [priority, setPriority] = useState(group.priority);
+  const [priority, setPriority] = useState(String(group.priority));
   const [permissions, setPermissions] = useState(BigInt(group.permissions));
+  const [nameEdited, setNameEdited] = useState(false);
+  const [priorityEdited, setPriorityEdited] = useState(false);
+  const [permissionsEdited, setPermissionsEdited] = useState(false);
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    if (!nameEdited) setName(group.displayName);
+  }, [group.displayName, nameEdited]);
+  useEffect(() => {
+    if (!priorityEdited) setPriority(String(group.priority));
+  }, [group.priority, priorityEdited]);
+  useEffect(() => {
+    if (!permissionsEdited) setPermissions(BigInt(group.permissions));
+  }, [group.permissions, permissionsEdited]);
 
   if (group.isPlatformAdmin) {
     return (
@@ -68,7 +81,7 @@ function GroupEditor({
         {Object.entries(permissionLabels)
           .filter(
             ([name]) =>
-              (permissions &
+              (BigInt(group.permissions) &
                 PermissionFlags[name as keyof typeof PermissionFlags]) !==
               0n,
           )
@@ -86,7 +99,10 @@ function GroupEditor({
           <Input
             id={`group-name-${group.id}`}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              setNameEdited(true);
+            }}
             maxLength={64}
           />
         </div>
@@ -98,7 +114,10 @@ function GroupEditor({
             min={0}
             max={1000}
             value={priority}
-            onChange={(e) => setPriority(Number(e.target.value))}
+            onChange={(e) => {
+              setPriority(e.target.value);
+              setPriorityEdited(true);
+            }}
             className="w-28"
           />
         </div>
@@ -116,11 +135,12 @@ function GroupEditor({
           <Label key={name} className="flex items-center gap-2 font-normal">
             <Checkbox
               checked={(permissions & flag) === flag}
-              onCheckedChange={(checked) =>
+              onCheckedChange={(checked) => {
                 setPermissions((current) =>
                   checked ? current | flag : current & ~flag,
-                )
-              }
+                );
+                setPermissionsEdited(true);
+              }}
             />
             {permissionLabels[name]}
           </Label>
@@ -131,19 +151,26 @@ function GroupEditor({
         variant="outline"
         disabled={
           pending ||
+          !(nameEdited || priorityEdited || permissionsEdited) ||
           !name.trim() ||
-          !Number.isInteger(priority) ||
-          priority < 0 ||
-          priority > 1000
+          !priority.trim() ||
+          !Number.isInteger(Number(priority)) ||
+          Number(priority) < 0 ||
+          Number(priority) > 1000
         }
         onClick={async () => {
           setPending(true);
           try {
             await updateGroup(group.id, {
-              displayName: name.trim(),
-              priority,
-              permissions: permissions.toString(),
+              ...(nameEdited ? { displayName: name.trim() } : {}),
+              ...(priorityEdited ? { priority: Number(priority) } : {}),
+              ...(permissionsEdited
+                ? { permissions: permissions.toString() }
+                : {}),
             });
+            setNameEdited(false);
+            setPriorityEdited(false);
+            setPermissionsEdited(false);
             onError('');
             onSaved();
           } catch (error) {

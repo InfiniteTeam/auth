@@ -16,7 +16,7 @@ function createService(overrides: Record<string, unknown> = {}) {
         ...data,
       })),
       findUnique: vi.fn(),
-      updateMany: vi.fn(),
+      updateMany: vi.fn(async () => ({ count: 1 })),
     },
   };
   const lldap = { permissionsFor: vi.fn(async () => "0") };
@@ -121,9 +121,67 @@ describe("SessionService", () => {
     expect(lldap.permissionsFor).toHaveBeenCalledWith("devuser");
     expect(resolved?.user.permissions).toBe("0");
     expect(prisma.session.updateMany).toHaveBeenCalledWith({
-      where: { id: session.id, revokedAt: null },
+      where: { id: session.id, revokedAt: null, expiresAt: { gt: expect.any(Date) } },
       data: { permissions: "0" },
     });
+  });
+
+  it("rejects a session revoked while permissions are being refreshed", async () => {
+    const { service, prisma } = createService();
+    const { session, cookieValue } = await service.createSession({
+      userId: "devuser",
+      provider: "ldap",
+      email: "devuser@inftkr.kr",
+      name: "Dev User",
+      roles: ["user"],
+      permissions: "0",
+    });
+    const row = {
+      id: session.id,
+      userId: "devuser",
+      provider: "ldap",
+      email: "devuser@inftkr.kr",
+      name: "Dev User",
+      roles: ["user"],
+      permissions: "0",
+      issuedAt: new Date(),
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+    };
+    prisma.session.findUnique
+      .mockResolvedValueOnce(row)
+      .mockResolvedValueOnce({ ...row, revokedAt: new Date() });
+
+    await expect(service.resolveSessionFromCookie(cookieValue)).resolves.toBeNull();
+    expect(prisma.session.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects a session revoked between the second read and permission update", async () => {
+    const { service, prisma } = createService();
+    const { session, cookieValue } = await service.createSession({
+      userId: "devuser",
+      provider: "ldap",
+      email: "devuser@inftkr.kr",
+      name: "Dev User",
+      roles: ["user"],
+      permissions: "1",
+    });
+    const row = {
+      id: session.id,
+      userId: "devuser",
+      provider: "ldap",
+      email: "devuser@inftkr.kr",
+      name: "Dev User",
+      roles: ["user"],
+      permissions: "1",
+      issuedAt: new Date(),
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+    };
+    prisma.session.findUnique.mockResolvedValue(row);
+    prisma.session.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.resolveSessionFromCookie(cookieValue)).resolves.toBeNull();
   });
 
   it("returns null for an expired session", async () => {

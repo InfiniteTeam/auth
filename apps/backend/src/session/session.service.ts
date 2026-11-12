@@ -145,13 +145,18 @@ export class SessionService {
     }
 
     const permissions = await this.lldap.permissionsFor(row.userId);
-    if (permissions !== row.permissions) {
-      await this.prisma.session.updateMany({
-        where: { id: row.id, revokedAt: null },
+    const current = await this.prisma.session.findUnique({ where: { id } });
+    if (!current || current.revokedAt || current.expiresAt.getTime() < Date.now()) {
+      return null;
+    }
+    if (permissions !== current.permissions) {
+      const result = await this.prisma.session.updateMany({
+        where: { id, revokedAt: null, expiresAt: { gt: new Date() } },
         data: { permissions },
       });
+      if (result.count === 0) return null;
     }
-    return this.toSession({ ...row, permissions });
+    return this.toSession({ ...current, permissions });
   }
 
   /**

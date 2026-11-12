@@ -2,7 +2,7 @@
  * Admin directory group service (lldap-backed).
  */
 
-import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { PermissionBitField } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../../config/config.js";
 import { LldapService, LldapWriteError } from "../../lldap/lldap.service.js";
@@ -50,7 +50,7 @@ export class AdminGroupsService {
   }
 
   /** Updates a directory group. The platform admin group is immutable. */
-  async update(groupId: number, input: UpdateAdminGroupDto): Promise<AdminGroupDto> {
+  async update(groupId: number, input: UpdateAdminGroupDto, actorPermissions: string): Promise<AdminGroupDto> {
     if (input.displayName === undefined && input.priority === undefined && input.permissions === undefined) {
       throw new BadRequestException("Nothing to update");
     }
@@ -64,7 +64,11 @@ export class AdminGroupsService {
       }
     }
     if (input.displayName !== undefined) this.assertAvailableName(input.displayName);
-    await this.assertNotAdminGroup(groupId);
+    const target = await this.assertNotAdminGroup(groupId);
+    if ((input.priority !== undefined || input.permissions !== undefined) &&
+        (BigInt(input.permissions ?? target.permissions) & ~BigInt(actorPermissions)) !== 0n) {
+      throw new ForbiddenException("Cannot grant permissions you do not hold");
+    }
     try {
       if (input.displayName !== undefined) {
         await this.lldap.updateGroupAdmin(groupId, input.displayName);
@@ -94,9 +98,12 @@ export class AdminGroupsService {
 
   /** Deletes a directory group. The platform admin group cannot be deleted. */
   async remove(groupId: number): Promise<void> {
-    await this.assertNotAdminGroup(groupId);
+    const target = (await this.list()).find((group) => group.id === groupId);
+    if (target?.isPlatformAdmin) {
+      throw new BadRequestException("The platform admin group cannot be modified");
+    }
     try {
-      await this.lldap.deleteGroupAdmin(groupId);
+      if (target) await this.lldap.deleteGroupAdmin(groupId);
       await this.prisma.groupPolicy.deleteMany({ where: { groupId } });
     } catch (error) {
       throw this.toHttp(error);
@@ -104,7 +111,12 @@ export class AdminGroupsService {
   }
 
   /** Adds a user to a group. */
-  async addMember(groupId: number, userId: string): Promise<void> {
+  async addMember(groupId: number, userId: string, actorPermissions: string): Promise<void> {
+    const target = (await this.list()).find((group) => group.id === groupId);
+    if (!target) throw new NotFoundException(`Unknown group "${groupId}"`);
+    if ((BigInt(target.permissions) & ~BigInt(actorPermissions)) !== 0n) {
+      throw new ForbiddenException("Cannot join users to a group with permissions you do not hold");
+    }
     try {
       await this.lldap.addUserToGroup(userId, groupId);
     } catch (error) {
@@ -128,13 +140,14 @@ export class AdminGroupsService {
     }
   }
 
-  private async assertNotAdminGroup(groupId: number): Promise<void> {
+  private async assertNotAdminGroup(groupId: number): Promise<AdminGroupDto> {
     const groups = await this.list();
     const target = groups.find((g) => g.id === groupId);
     if (target && target.displayName === this.config.lldapAdminGroupName) {
       throw new BadRequestException("The platform admin group cannot be modified");
     }
     if (!target) throw new NotFoundException(`Unknown group "${groupId}"`);
+    return target;
   }
 
   private assertAvailableName(displayName: string): void {
