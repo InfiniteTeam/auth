@@ -38,7 +38,7 @@ apps/
 packages/
   shared/    # @inftkr/shared   — shared constants & domain types
   auth-core/ # @inftkr/auth-core — shared auth core: types, client, guards, react hooks
-  auth-sdk/  # @inftkr/auth-sdk  — OIDC SDK for external consumer services
+  auth-sdk/  # @infiniteteam/auth-sdk  — OIDC SDK for external consumer services
   scripts/   # @inftkr/scripts   — internal tooling (private, docs generation)
 deploy/      # Docker Compose (backend, www, lldap, PostgreSQL, reverse proxy)
 ```

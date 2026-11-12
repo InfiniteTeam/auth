@@ -187,7 +187,7 @@ or restart the whole stack after populating `.env`.
 Example for an OIDC/SDK consumer service:
 
 ```ts
-import { AuthClient } from '@inftkr/auth-sdk';
+import { AuthClient } from '@infiniteteam/auth-sdk';
 
 const auth = new AuthClient({
   issuer: 'https://auth.example.com',

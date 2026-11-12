@@ -32,7 +32,7 @@ apps/
 packages/
   shared/    # @inftkr/shared — shared constants & domain types
   auth-core/ # @inftkr/auth-core — types, client, guards, react hooks
-  auth-sdk/  # @inftkr/auth-sdk — OIDC SDK for consumer services
+  auth-sdk/  # @infiniteteam/auth-sdk — OIDC SDK for consumer services
   scripts/   # @inftkr/scripts — internal tooling, docs generation
 ```
 
@@ -105,12 +105,14 @@ pnpm --filter @inftkr/docs build     # static export → apps/docs/out
 
 ## Releasing packages
 
-`@inftkr/auth-sdk` is the only publishable package so far (MIT, public, npm
-`@inftkr/auth-sdk`). `prepublishOnly` builds and re-generates docs.
+`@infiniteteam/auth-sdk` is the only publishable package so far (MIT, GitHub
+Packages). Run the `Publish auth-sdk` GitHub Actions workflow from `develop` to
+build, test, and publish the current package version. Increment its version
+before running the workflow again; GitHub Packages does not accept duplicate
+versions. `prepublishOnly` builds and re-generates docs.
 
 ```bash
-pnpm --filter @inftkr/auth-sdk prepublishOnly
-pnpm --filter @inftkr/auth-sdk publish --dry-run
+pnpm --filter @infiniteteam/auth-sdk publish --dry-run
 ```
 
 ## Branch workflow

@@ -31,7 +31,7 @@ const guidesSrc = path.join(repoRoot, 'docs');
 const PACKAGES = [
   { dir: 'shared', name: '@inftkr/shared', label: 'Shared' },
   { dir: 'auth-core', name: '@inftkr/auth-core', label: 'Auth Core' },
-  { dir: 'auth-sdk', name: '@inftkr/auth-sdk', label: 'Auth SDK' },
+  { dir: 'auth-sdk', name: '@infiniteteam/auth-sdk', label: 'Auth SDK' },
 ];
 
 function renderNode(node) {

@@ -1,4 +1,4 @@
-# @inftkr/auth-sdk
+# @infiniteteam/auth-sdk
 
 OpenID Connect client SDK for consumer services that want to integrate with the
 [inft-auth](https://github.com/InfiniteTeam/auth) identity platform — or any
@@ -17,15 +17,23 @@ standards-compliant OIDC provider.
 
 ## Install
 
+GitHub Packages requires authentication to install npm packages, including
+public packages. Configure `@infiniteteam:registry=https://npm.pkg.github.com`
+in your project's `.npmrc`, then sign in with a classic GitHub personal access
+token with `read:packages` permission:
+
 ```bash
-pnpm add @inftkr/auth-sdk
-# or: npm install @inftkr/auth-sdk
+npm login --scope=@infiniteteam --registry=https://npm.pkg.github.com
+```
+
+```bash
+pnpm add @infiniteteam/auth-sdk
 ```
 
 ## Quick start
 
 ```ts
-import { OidcClient } from "@inftkr/auth-sdk";
+import { OidcClient } from "@infiniteteam/auth-sdk";
 
 const client = new OidcClient({
   issuerUrl: "https://auth.inft.kr",
