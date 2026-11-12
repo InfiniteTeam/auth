@@ -6,27 +6,30 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdminGuard } from '@/components/admin-guard';
-import { AdminApiError, getAdminMeta, listClients, listSessions, listSettings } from '@/lib/admin';
+import { AdminApiError, getAdminMeta, getAdminOverview, listClients, listSettings, type AdminOverview } from '@/lib/admin';
 
 function Overview() {
   const [stats, setStats] = useState({ clients: 0, sessions: 0, overrides: 0 });
+  const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [meta, setMeta] = useState<{
     issuerUrl: string;
     allowedDomains: string[];
   } | null>(null);
   const [error, setError] = useState('');
+  const peak = Math.max(1, ...(overview?.weeks.map((week) => week.count) ?? []));
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([listClients(), listSessions(), listSettings(), getAdminMeta()])
-      .then(([clients, sessions, settings, meta]) => {
+    Promise.all([listClients(), listSettings(), getAdminMeta(), getAdminOverview()])
+      .then(([clients, settings, meta, overview]) => {
         if (!cancelled) {
           setStats({
             clients: clients.length,
-            sessions: sessions.filter((s) => s.active).length,
+            sessions: overview.activeSessions,
             overrides: settings.filter((s) => s.source === 'override').length,
           });
           setMeta(meta);
+          setOverview(overview);
         }
       })
       .catch((err) => {
@@ -76,6 +79,52 @@ function Overview() {
           </CardContent>
         </Card>
       </div>
+      {overview ? (
+        <div className="grid gap-10 lg:grid-cols-2">
+          <Card className="rounded-none bg-transparent py-0 ring-0">
+            <CardHeader className="px-0">
+              <CardTitle>주간 로그인</CardTitle>
+              <CardDescription>최근 8주간 생성된 세션 수 · UTC 기준</CardDescription>
+            </CardHeader>
+            <CardContent className="px-0">
+              <ol className="space-y-3">
+                {overview.weeks.map(({ week, count }) => (
+                  <li key={week} className="grid grid-cols-[5rem_minmax(0,1fr)_2rem] items-center gap-3 text-sm">
+                    <time dateTime={week}>{new Date(week).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', timeZone: 'UTC' })}</time>
+                    <div className="h-3 rounded bg-muted" aria-hidden="true">
+                      <div className="h-full rounded bg-primary" style={{ width: `${count / peak * 100}%` }} />
+                    </div>
+                    <span className="text-right tabular-nums">{count}</span>
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+          <Card className="rounded-none bg-transparent py-0 ring-0">
+            <CardHeader className="px-0">
+              <CardTitle>최근 변경</CardTitle>
+              <CardDescription>OIDC 클라이언트와 플랫폼 설정의 최근 저장 기록</CardDescription>
+            </CardHeader>
+            <CardContent className="px-0">
+              {overview.changes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">표시할 변경 내역이 없습니다.</p>
+              ) : (
+                <ol className="divide-y">
+                  {overview.changes.map((change) => (
+                    <li key={`${change.kind}-${change.label}`} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
+                      <span className="min-w-0 break-all">
+                        {change.kind === 'client' ? '클라이언트' : '설정'} {change.label}
+                        <span className="ml-2 text-muted-foreground">{change.action === 'created' ? '생성' : '변경'}</span>
+                      </span>
+                      <time className="text-muted-foreground" dateTime={change.at}>{new Date(change.at).toLocaleString('ko-KR')}</time>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
       {meta ? (
         <Card className="grid gap-6 rounded-none bg-transparent py-0 ring-0 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
           <CardHeader className="px-0">
@@ -101,7 +150,7 @@ function Overview() {
 
 export default function Page() {
   return (
-    <AdminGuard required={PermissionFlags.OidcClientRead}>
+    <AdminGuard required={PermissionFlags.OidcClientRead | PermissionFlags.SessionRead | PermissionFlags.SettingsRead}>
       <Suspense>
         <Overview />
       </Suspense>
