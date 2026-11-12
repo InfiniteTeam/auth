@@ -139,6 +139,10 @@ ingress:
   - service: http_status:404
 ```
 
+On an existing installation, copy updated path rules into the generated
+`cloudflared/config.yml` and run `docker compose --profile tunnel restart cloudflared`.
+Changing the tracked template alone does not update the running tunnel.
+
 ### 4. Configure DNS (dashboard)
 
 Create two proxied CNAME records pointing at the tunnel:
