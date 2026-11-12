@@ -103,10 +103,12 @@ export class AdminUsersService {
   async remove(id: string): Promise<void> {
     await this.get(id);
     try {
-      await this.prisma.account.deleteMany({ where: { userId: id } });
-      await this.prisma.session.updateMany({
-        where: { userId: id, revokedAt: null },
-        data: { revokedAt: new Date() },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.account.deleteMany({ where: { userId: id } });
+        await tx.session.updateMany({
+          where: { userId: id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
       });
       await this.lldap.deleteUserAdmin(id);
     } catch (error) {

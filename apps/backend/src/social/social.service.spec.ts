@@ -34,6 +34,11 @@ function createProvider(): SocialProvider {
 
 function createService(rows: Record<string, unknown> = {}) {
   const prisma = {
+    $queryRaw: vi.fn(
+      async (_strings: TemplateStringsArray, ..._values: unknown[]) => [
+        { id: "acc-1" },
+      ],
+    ),
     account: {
       findUnique: vi.fn(async () => null),
       findFirst: vi.fn(async () => null),
@@ -182,15 +187,14 @@ describe("SocialService email domain policy", () => {
 
   it("revokes a newly issued session when its social account was deleted", async () => {
     const { service, prisma, lldap, sessionService } = createService();
-    prisma.account.findUnique
-      .mockResolvedValueOnce({
-        id: "acc-1",
-        userId: "user@gmail.com",
-        email: "user@gmail.com",
-        provider: "github",
-        verified: true,
-      } as never)
-      .mockResolvedValueOnce(null);
+    prisma.account.findUnique.mockResolvedValueOnce({
+      id: "acc-1",
+      userId: "user@gmail.com",
+      email: "user@gmail.com",
+      provider: "github",
+      verified: true,
+    } as never);
+    prisma.$queryRaw.mockResolvedValueOnce([]);
     lldap.getUserById.mockResolvedValue({
       id: "user@gmail.com",
       email: "user@gmail.com",
@@ -208,6 +212,9 @@ describe("SocialService email domain policy", () => {
 
     expect(outcome).toEqual({ kind: "error", code: "provider_error" });
     expect(sessionService.revokeSession).toHaveBeenCalledWith("cookie");
+    expect(prisma.$queryRaw.mock.calls[0]?.[0].join("")).toContain(
+      "FOR UPDATE",
+    );
   });
 
   it("does not issue a session when the directory user has been deleted", async () => {

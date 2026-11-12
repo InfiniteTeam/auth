@@ -17,9 +17,15 @@ function setup() {
       },
     ]),
   };
-  const prisma = {
+  const tx = {
     session: { updateMany: vi.fn(async () => ({ count: 1 })) },
     account: { deleteMany: vi.fn(async () => ({ count: 1 })) },
+  };
+  const prisma = {
+    ...tx,
+    $transaction: vi.fn(
+      async (callback: (client: typeof tx) => Promise<void>) => callback(tx),
+    ),
   };
   return {
     service: new AdminUsersService(lldap as never, prisma as never),
@@ -79,11 +85,24 @@ describe("AdminUsersService", () => {
       where: { userId: "a@example.com" },
     });
     expect(lldap.deleteUserAdmin).toHaveBeenCalledWith("a@example.com");
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
     expect(prisma.account.deleteMany.mock.invocationCallOrder[0]).toBeLessThan(
       prisma.session.updateMany.mock.invocationCallOrder[0]!,
     );
     expect(prisma.session.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
       lldap.deleteUserAdmin.mock.invocationCallOrder[0]!,
     );
+  });
+
+  it("does not delete the directory user when the database transaction fails", async () => {
+    const { service, lldap, prisma } = setup();
+    prisma.session.updateMany.mockRejectedValueOnce(
+      new Error("Database unavailable"),
+    );
+
+    await expect(service.remove("a@example.com")).rejects.toThrow(
+      "Database unavailable",
+    );
+    expect(lldap.deleteUserAdmin).not.toHaveBeenCalled();
   });
 });

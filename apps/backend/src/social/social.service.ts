@@ -422,10 +422,13 @@ export class SocialService {
       roles: user.roles,
       permissions: user.permissions,
     });
-    const account = await this.prisma.account.findUnique({
-      where: { id: accountId },
-    });
-    if (!account || !account.verified || account.userId !== userId) {
+    // The lock makes this check wait for a concurrent account deletion to commit.
+    const accounts = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "Account"
+      WHERE id = ${accountId} AND "userId" = ${userId} AND verified = true
+      FOR UPDATE
+    `;
+    if (accounts.length === 0) {
       await this.sessionService.revokeSession(cookieValue);
       return null;
     }
