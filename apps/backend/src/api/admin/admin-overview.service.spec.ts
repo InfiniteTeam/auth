@@ -9,6 +9,7 @@ describe("AdminOverviewService", () => {
     vi.setSystemTime(new Date("2026-11-12T12:00:00Z"));
     const prisma = {
       $queryRaw: vi.fn(async () => [
+        { week: new Date("2026-09-21T00:00:00Z"), count: 2n },
         { week: new Date("2026-11-09T00:00:00Z"), count: 3n },
       ]),
       oidcClient: {
@@ -34,11 +35,15 @@ describe("AdminOverviewService", () => {
     const result = await new AdminOverviewService(prisma as never).get();
 
     expect(result.weeks).toHaveLength(8);
+    expect(result.weeks[0]).toEqual({
+      week: "2026-09-21T00:00:00.000Z",
+      count: 2,
+    });
     expect(result.weeks.at(-1)).toEqual({
       week: "2026-11-09T00:00:00.000Z",
       count: 3,
     });
-    expect(result.weeks.slice(0, -1).every((week) => week.count === 0)).toBe(
+    expect(result.weeks.slice(1, -1).every((week) => week.count === 0)).toBe(
       true,
     );
     expect(result.activeSessions).toBe(2);
