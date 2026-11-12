@@ -98,7 +98,7 @@ export function AuthShell({
           </div>
           <footer className="panel-footer">
             <a href="https://inft.kr/privacy">개인정보 처리방침</a>
-            <a href="mailto:support@inftkr.kr">도움말</a>
+            <a href="https://inft-auth-docs.pages.dev">도움말</a>
             <span>한국어</span>
           </footer>
         </section>
