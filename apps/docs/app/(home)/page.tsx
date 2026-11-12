@@ -7,7 +7,7 @@ const features = [
     title: 'OAuth 2.0 / OIDC',
     description:
       'Standards-compliant provider built on oidc-provider with a Nest.js backend.',
-    href: '/docs/oidc',
+    href: '/docs/guides/oidc',
     hrefText: 'OIDC & integrations',
   },
   {
@@ -15,7 +15,7 @@ const features = [
     title: 'LDAP identity',
     description:
       'User identities managed by lldap (PostgreSQL-backed, single source of truth).',
-    href: '/docs/security',
+    href: '/docs/guides/security',
     hrefText: 'Security model',
   },
   {
@@ -23,7 +23,7 @@ const features = [
     title: 'Session & cookies',
     description:
       'Signed inft_session cookie — HttpOnly, Secure, SameSite=Lax, 7-day TTL.',
-    href: '/docs/security',
+    href: '/docs/guides/security',
     hrefText: 'Security model',
   },
 ];

@@ -115,7 +115,7 @@ async function copyGuides() {
   }
 
   await writeFile(
-    path.join(contentRoot, 'guides', 'meta.json'),
+    path.join(dest, 'meta.json'),
     JSON.stringify({ title: 'Guides', pages: ['README', 'deployment', 'development', 'oidc', 'security'] }, null, 2),
     'utf8',
   );
@@ -215,7 +215,7 @@ async function generateApiReferences() {
         `Package: \`${pkg.name}\``,
         '',
         ...pageNames.map(
-          (name) => `- [\`${name}\`](./${toFileName(name)})`,
+          (name) => `- [\`${name}\`](/docs/api/${pkg.dir}/${toFileName(name)})`,
         ),
         '',
       ].join('\n'),
