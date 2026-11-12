@@ -1,0 +1,12 @@
+{
+  "scanned": "2026-11-12",
+  "findings": {
+    "fonts": "Pretendard with Inter and system fallback in apps/docs/app/global.css",
+    "palette": "InfiniteTeam navy and mint tokens in apps/docs/app/global.css",
+    "motion": "CSS transitions only",
+    "spacing": "Tailwind 4 and Fumadocs UI",
+    "framework": "Next.js 16 App Router and Fumadocs 16"
+  },
+  "preserve": ["Fumadocs navigation and document routes", "existing home page facts and links", "navy and mint brand palette"],
+  "introduce": ["identity path composition", "topic index", "focus and reduced motion states", "page metadata"]
+}

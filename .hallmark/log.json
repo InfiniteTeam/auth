@@ -1,0 +1,28 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "site",
+  "shape": "index-first",
+  "theme": "brand",
+  "axes": "dark/sans/mint",
+  "hero": "stage",
+  "nav": "Fumadocs mast",
+  "footer": "compact index",
+  "imagery": "identity path built from existing architecture",
+  "photos": [],
+  "entry": "documentation index",
+  "fingerprint": "docs-index-navy-mint",
+  "sections": [
+   "hero",
+   "overview",
+   "topics",
+   "integration",
+   "footer"
+  ],
+  "signature": "identity path",
+  "waived": [],
+  "prompt": "Redesign apps/docs with Hallmark",
+  "date": "2026-11-12"
+ }
+]
