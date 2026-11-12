@@ -123,16 +123,16 @@ cloudflared uses the first matching rule:
 ```yaml
 ingress:
   - hostname: auth.example.com
-    path: /oauth2*
+    path: ^/oauth2(/|$)
     service: http://backend:3000
   - hostname: auth.example.com
-    path: /.well-known*
+    path: ^/\.well-known(/|$)
     service: http://backend:3000
   - hostname: auth.example.com
-    path: /api*
+    path: ^/api(/|$)
     service: http://backend:3000
   - hostname: example.com
-    path: /.well-known/webfinger
+    path: ^/\.well-known/webfinger$
     service: http://backend:3000
   - hostname: auth.example.com
     service: http://www:3001

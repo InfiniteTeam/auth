@@ -10,8 +10,8 @@ tunnel: __TUNNEL_ID__
 credentials-file: /etc/cloudflared/credentials.json
 
 # Route map:
-#   ${AUTH_DOMAIN}/oauth2/*, /auth*, /interaction*, /token*, /userinfo*,
-#     /session*, /.well-known/*, /api/*  -> backend (OIDC/API)
+#   ${AUTH_DOMAIN}/oauth2/*, /auth/*, /interaction/*, /token/*, /userinfo/*,
+#     /session/*, /.well-known/*, /api/* -> backend (OIDC/API)
 #   ${ROOT_DOMAIN}/.well-known/webfinger -> backend
 #   ${AUTH_DOMAIN}/*                     -> www (frontend portal)
 #
@@ -19,33 +19,33 @@ credentials-file: /etc/cloudflared/credentials.json
 ingress:
   # OIDC / API / WebFinger on the auth domain -> backend
   - hostname: __AUTH_DOMAIN__
-    path: /auth*
+    path: ^/auth(/|$)
     service: http://backend:3000
   - hostname: __AUTH_DOMAIN__
-    path: /interaction*
+    path: ^/interaction(/|$)
     service: http://backend:3000
   - hostname: __AUTH_DOMAIN__
-    path: /token*
+    path: ^/token(/|$)
     service: http://backend:3000
   - hostname: __AUTH_DOMAIN__
-    path: /userinfo*
+    path: ^/userinfo(/|$)
     service: http://backend:3000
   - hostname: __AUTH_DOMAIN__
-    path: /session*
+    path: ^/session(/|$)
     service: http://backend:3000
   - hostname: __AUTH_DOMAIN__
-    path: /oauth2*
+    path: ^/oauth2(/|$)
     service: http://backend:3000
   - hostname: __AUTH_DOMAIN__
-    path: /.well-known*
+    path: ^/\.well-known(/|$)
     service: http://backend:3000
   - hostname: __AUTH_DOMAIN__
-    path: /api*
+    path: ^/api(/|$)
     service: http://backend:3000
 
   # WebFinger on the root domain -> backend
   - hostname: __ROOT_DOMAIN__
-    path: /.well-known/webfinger
+    path: ^/\.well-known/webfinger$
     service: http://backend:3000
 
   # Frontend portal (catch-all for the auth domain) -> www
