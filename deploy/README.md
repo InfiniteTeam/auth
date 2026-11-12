@@ -123,21 +123,25 @@ cloudflared uses the first matching rule:
 ```yaml
 ingress:
   - hostname: auth.example.com
-    path: /oauth2*
+    path: ^/oauth2(/|$)
     service: http://backend:3000
   - hostname: auth.example.com
-    path: /.well-known*
+    path: ^/\.well-known(/|$)
     service: http://backend:3000
   - hostname: auth.example.com
-    path: /api*
+    path: ^/api(/|$)
     service: http://backend:3000
   - hostname: example.com
-    path: /.well-known/webfinger
+    path: ^/\.well-known/webfinger$
     service: http://backend:3000
   - hostname: auth.example.com
     service: http://www:3001
   - service: http_status:404
 ```
+
+On an existing installation, copy updated path rules into the generated
+`cloudflared/config.yml` and run `docker compose --profile tunnel restart cloudflared`.
+Changing the tracked template alone does not update the running tunnel.
 
 ### 4. Configure DNS (dashboard)
 
