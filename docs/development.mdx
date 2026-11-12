@@ -106,10 +106,11 @@ pnpm --filter @inftkr/docs build     # static export → apps/docs/out
 ## Releasing packages
 
 `@inftkr/auth-sdk` is the only publishable package so far (MIT, npmjs.org).
-Increment its version before another release. `prepublishOnly` builds and
-re-generates docs. Run the `Publish auth-sdk on npm` GitHub Actions workflow
-(`stage-auth-sdk.yml`) from `develop` to publish it. The workflow uses npm
-trusted publishing with GitHub OIDC, so it does not need an npm token.
+Increment its version, then publish a GitHub Release tagged `v<package version>`
+from that commit. The `Publish auth-sdk on npm` workflow (`stage-auth-sdk.yml`)
+builds, tests, and publishes stable releases automatically. It uses npm trusted
+publishing with GitHub OIDC, so it does not need an npm token. `prepublishOnly`
+builds and re-generates docs.
 
 ```bash
 pnpm --filter @inftkr/auth-sdk publish --dry-run
