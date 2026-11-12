@@ -17,8 +17,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
 import { AdminGuard } from '@/components/admin-guard';
+import { RedirectUriFields } from '@/components/redirect-uri-fields';
 import {
   AdminApiError,
   createClient,
@@ -70,7 +70,7 @@ function ClientCard({
   onSecret: (result: CreateOidcClientResult) => void;
   onError: (message: string) => void;
 }) {
-  const [uris, setUris] = useState(client.redirectUris.join('\n'));
+  const [uris, setUris] = useState(client.redirectUris);
   const [pending, setPending] = useState(false);
 
   const onRotate = useCallback(async () => {
@@ -93,10 +93,7 @@ function ClientCard({
   }, [client, onError, onSecret]);
 
   const onSaveUris = useCallback(async () => {
-    const list = uris
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean);
+    const list = uris.map((uri) => uri.trim()).filter(Boolean);
     if (list.length === 0 || !list.every((u) => /^https?:\/\/.+/.test(u))) {
       onError('올바른 리다이렉트 URI를 최소 한 개 입력해 주세요.');
       return;
@@ -153,15 +150,7 @@ function ClientCard({
           ))}
         </div>
         {canEdit ? (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`redirect-${client.clientId}`}>리다이렉트 URI (한 줄에 하나씩)</Label>
-            <Textarea
-              id={`redirect-${client.clientId}`}
-              value={uris}
-              onChange={(e) => setUris(e.target.value)}
-              rows={3}
-            />
-          </div>
+          <RedirectUriFields id={`redirect-${client.clientId}`} value={uris} onChange={setUris} disabled={pending} />
         ) : (
           <ul className="space-y-0.5">
             {client.redirectUris.map((uri) => (
@@ -203,14 +192,14 @@ function CreateCard({
   onError: (m: string) => void;
 }) {
   const [name, setName] = useState('');
-  const [uris, setUris] = useState('');
+  const [uris, setUris] = useState(['']);
   const [pending, setPending] = useState(false);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>새 OIDC 클라이언트</CardTitle>
-        <CardDescription>리다이렉트 URI는 한 줄에 하나씩 입력해 주세요.</CardDescription>
+        <CardDescription>필요한 리다이렉트 URL을 각각 입력해 주세요.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
@@ -222,25 +211,13 @@ function CreateCard({
             maxLength={64}
           />
         </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="new-redirect-uris">리다이렉트 URI</Label>
-          <Textarea
-            id="new-redirect-uris"
-            value={uris}
-            onChange={(e) => setUris(e.target.value)}
-            placeholder={'https://app.example.com/callback\nhttps://admin.example.com/callback'}
-            rows={3}
-          />
-        </div>
+        <RedirectUriFields id="new-redirect-uris" value={uris} onChange={setUris} disabled={pending} />
       </CardContent>
       <CardFooter>
         <Button
           disabled={pending}
           onClick={async () => {
-            const list = uris
-              .split('\n')
-              .map((l) => l.trim())
-              .filter(Boolean);
+            const list = uris.map((uri) => uri.trim()).filter(Boolean);
             if (list.length === 0) {
               onError('리다이렉트 URI를 입력해 주세요.');
               return;
@@ -252,7 +229,7 @@ function CreateCard({
                 redirectUris: list,
               });
               setName('');
-              setUris('');
+              setUris(['']);
               onError('');
               onCreated();
             } catch {

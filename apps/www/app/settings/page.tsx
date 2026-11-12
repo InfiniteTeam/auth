@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { RedirectUriFields } from '@/components/redirect-uri-fields';
 import {
   AdminApiError,
   type AdminOidcClient,
@@ -438,7 +438,7 @@ function ClientCreateForm({
   onError: (message: string) => void;
 }) {
   const [clientName, setClientName] = useState('');
-  const [redirectUris, setRedirectUris] = useState('');
+  const [redirectUris, setRedirectUris] = useState(['']);
   const [authMethod, setAuthMethod] = useState<string>('client_secret_post');
   const [grants, setGrants] = useState<Set<string>>(() => new Set(['authorization_code']));
   const [responses, setResponses] = useState<Set<string>>(() => new Set(['code']));
@@ -463,12 +463,9 @@ function ClientCreateForm({
   );
 
   const onSubmit = useCallback(async () => {
-    const uris = redirectUris
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean);
+    const uris = redirectUris.map((uri) => uri.trim()).filter(Boolean);
     if (uris.length === 0 || !urlsValid(uris)) {
-      onError('올바른 리다이렉트 URI를 최소 한 개 입력해 주세요. (한 줄에 하나씩)');
+      onError('올바른 리다이렉트 URL을 최소 한 개 입력해 주세요.');
       return;
     }
     onError('');
@@ -484,7 +481,7 @@ function ClientCreateForm({
       });
       setCreated(result);
       setClientName('');
-      setRedirectUris('');
+      setRedirectUris(['']);
       onCreated();
     } catch (err) {
       onError(
@@ -512,7 +509,7 @@ function ClientCreateForm({
     <Card className="settings-section">
       <CardHeader>
         <CardTitle>새 OIDC 클라이언트</CardTitle>
-        <CardDescription>리다이렉트 URI는 한 줄에 하나씩 입력해 주세요.</CardDescription>
+        <CardDescription>필요한 리다이렉트 URL을 각각 입력해 주세요.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
@@ -526,16 +523,7 @@ function ClientCreateForm({
             maxLength={64}
           />
         </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="redirect-uris">리다이렉트 URI</Label>
-          <Textarea
-            id="redirect-uris"
-            value={redirectUris}
-            onChange={(e) => setRedirectUris(e.target.value)}
-            placeholder={'https://login.tailscale.com/a/oauth_response'}
-            rows={3}
-          />
-        </div>
+        <RedirectUriFields id="redirect-uris" value={redirectUris} onChange={setRedirectUris} disabled={pending} />
         <div className="flex flex-col gap-2">
           <Label>토큰 엔드포인트 인증 방식</Label>
           <Select value={authMethod} onValueChange={(value) => setAuthMethod(value ?? 'client_secret_post')}>
