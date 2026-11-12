@@ -21,6 +21,7 @@ export function RedirectUriFields({
           <Input
             id={`${id}-${index}`}
             type="url"
+            aria-label={`리다이렉트 URL ${index + 1}`}
             value={uri}
             onChange={(event) =>
               onChange(value.map((item, i) => (i === index ? event.target.value : item)))
