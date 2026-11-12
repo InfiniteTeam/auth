@@ -30,6 +30,7 @@ function UsersPage() {
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
+  const [listError, setListError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [editing, setEditing] = useState<
     Record<string, { email: string; displayName: string }>
@@ -49,12 +50,12 @@ function UsersPage() {
       .then((list) => {
         if (!cancelled) {
           setUsers(list);
-          setError('');
+          setListError('');
         }
       })
       .catch((err) => {
         if (!cancelled)
-          setError(
+          setListError(
             err instanceof AdminApiError
               ? err.message
               : '사용자를 불러오지 못했습니다.',
@@ -73,6 +74,12 @@ function UsersPage() {
         <Alert variant="destructive">
           <AlertTitle>오류</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+      {listError ? (
+        <Alert variant="destructive">
+          <AlertTitle>오류</AlertTitle>
+          <AlertDescription>{listError}</AlertDescription>
         </Alert>
       ) : null}
       {notice ? (
@@ -159,7 +166,7 @@ function UsersPage() {
                 onSubmit={async (e) => {
                   e.preventDefault();
                   const rows = bulk
-                    .trim()
+                    .replace(/(?:\r?\n)+$/, '')
                     .split(/\r?\n/)
                     .map((line) => line.split('\t'));
                   if (rows.length > 200) {
@@ -180,6 +187,7 @@ function UsersPage() {
                   setBusy(true);
                   let added = 0;
                   const failed: number[] = [];
+                  const failedRows: string[] = [];
                   for (const [index, row] of rows.entries()) {
                     try {
                       await createUser({
@@ -190,9 +198,10 @@ function UsersPage() {
                       added++;
                     } catch {
                       failed.push(index + 1);
+                      failedRows.push(row.join('\t'));
                     }
                   }
-                  setBulk('');
+                  setBulk(failedRows.join('\n'));
                   setBusy(false);
                   setError(
                     failed.length

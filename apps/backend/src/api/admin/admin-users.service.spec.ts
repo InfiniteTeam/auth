@@ -31,6 +31,9 @@ function setup() {
 describe("AdminUsersService", () => {
   it("creates a user with an initial password", async () => {
     const { service, lldap } = setup();
+    lldap.listUsers.mockRejectedValueOnce(
+      new Error("Directory read unavailable"),
+    );
     await expect(
       service.create({
         email: "a@example.com",
@@ -47,6 +50,7 @@ describe("AdminUsersService", () => {
       "a@example.com",
       "password123",
     );
+    expect(lldap.listUsers).not.toHaveBeenCalled();
   });
 
   it("removes a newly created user if password setup fails", async () => {
@@ -64,7 +68,7 @@ describe("AdminUsersService", () => {
     expect(lldap.deleteUserAdmin).toHaveBeenCalledWith("a@example.com");
   });
 
-  it("revokes sessions and removes social links before deleting the directory user", async () => {
+  it("removes social links before revoking sessions and deleting the directory user", async () => {
     const { service, lldap, prisma } = setup();
     await service.remove("a@example.com");
     expect(prisma.session.updateMany).toHaveBeenCalledWith({
@@ -75,5 +79,11 @@ describe("AdminUsersService", () => {
       where: { userId: "a@example.com" },
     });
     expect(lldap.deleteUserAdmin).toHaveBeenCalledWith("a@example.com");
+    expect(prisma.account.deleteMany.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.session.updateMany.mock.invocationCallOrder[0]!,
+    );
+    expect(prisma.session.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
+      lldap.deleteUserAdmin.mock.invocationCallOrder[0]!,
+    );
   });
 });

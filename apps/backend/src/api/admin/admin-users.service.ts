@@ -63,7 +63,12 @@ export class AdminUsersService {
         }
         throw error;
       }
-      return this.get(email);
+      return {
+        id: email,
+        email,
+        displayName: input.displayName,
+        groups: [],
+      };
     } catch (error) {
       throw this.toHttp(error);
     }
@@ -98,11 +103,11 @@ export class AdminUsersService {
   async remove(id: string): Promise<void> {
     await this.get(id);
     try {
+      await this.prisma.account.deleteMany({ where: { userId: id } });
       await this.prisma.session.updateMany({
         where: { userId: id, revokedAt: null },
         data: { revokedAt: new Date() },
       });
-      await this.prisma.account.deleteMany({ where: { userId: id } });
       await this.lldap.deleteUserAdmin(id);
     } catch (error) {
       throw this.toHttp(error);
