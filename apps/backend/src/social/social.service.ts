@@ -182,7 +182,10 @@ export class SocialService {
   }
 
   /** Verifies via the one-time link token from the email. */
-  async verifyLink(accountId: string, token: string): Promise<SocialVerifyOutcome> {
+  async verifyLink(
+    accountId: string,
+    token: string,
+  ): Promise<SocialVerifyOutcome> {
     const result = await this.verification.verifyToken(accountId, token);
     if (!result.ok) {
       return { ok: false, reason: "invalid_input" };
@@ -278,10 +281,12 @@ export class SocialService {
 
     if (account) {
       if (account.verified) {
-        return this.signIn(account.userId, provider, {
-          email: account.email,
-          name: account.name || undefined,
-        });
+        return (
+          (await this.signIn(account.id, account.userId, provider)) ?? {
+            kind: "error",
+            code: "provider_error",
+          }
+        );
       }
       return this.resumeVerification(account.id, account.email);
     }
@@ -385,11 +390,17 @@ export class SocialService {
         displayName: account.name || account.email,
       });
     }
-    const signed = await this.signIn(account.userId, account.provider as AuthProvider, {
-      email: account.email,
-      name: account.name || undefined,
-    });
-    return { ok: true, session: signed.session, cookieValue: signed.cookieValue };
+    const signed = await this.signIn(
+      account.id,
+      account.userId,
+      account.provider as AuthProvider,
+    );
+    if (!signed) return { ok: false, reason: "account_not_found" };
+    return {
+      ok: true,
+      session: signed.session,
+      cookieValue: signed.cookieValue,
+    };
   }
 
   /**
@@ -397,17 +408,12 @@ export class SocialService {
    * login flow (roles/permissions resolved from lldap group membership).
    */
   private async signIn(
+    accountId: string,
     userId: string,
     provider: AuthProvider,
-    fallback: { email: string; name?: string },
-  ): Promise<{ kind: "login"; session: Session; cookieValue: string }> {
-    const user = (await this.lldap.getUserById(userId)) ?? {
-      id: userId,
-      email: fallback.email,
-      name: fallback.name ?? fallback.email,
-      roles: ["user"] as const,
-      permissions: "0",
-    };
+  ): Promise<{ kind: "login"; session: Session; cookieValue: string } | null> {
+    const user = await this.lldap.getUserById(userId);
+    if (!user) return null;
     const { session, cookieValue } = await this.sessionService.createSession({
       userId: user.id,
       provider,
@@ -416,6 +422,16 @@ export class SocialService {
       roles: user.roles,
       permissions: user.permissions,
     });
+    // The lock makes this check wait for a concurrent account deletion to commit.
+    const accounts = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "Account"
+      WHERE id = ${accountId} AND "userId" = ${userId} AND verified = true
+      FOR UPDATE
+    `;
+    if (accounts.length === 0) {
+      await this.sessionService.revokeSession(cookieValue);
+      return null;
+    }
     return { kind: "login", session, cookieValue };
   }
 }

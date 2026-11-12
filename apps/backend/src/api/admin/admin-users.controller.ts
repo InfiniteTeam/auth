@@ -2,12 +2,32 @@
  * Admin directory user controller — `/api/v1/admin/users` (lldap-backed).
  */
 
-import { Body, Controller, Delete, Get, Param, Patch, Query, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { PermissionFlags } from "@inftkr/shared";
-import { Permissions, PermissionsGuard } from "../../session/permissions.guard.js";
+import {
+  Permissions,
+  PermissionsGuard,
+} from "../../session/permissions.guard.js";
 import { AdminUsersService } from "./admin-users.service.js";
-import { AdminUserDto, AdminUserListDto, ListAdminUsersQueryDto, UpdateAdminUserDto } from "./dto/user-admin.dto.js";
+import {
+  AdminUserDto,
+  AdminUserListDto,
+  CreateAdminUserDto,
+  ListAdminUsersQueryDto,
+  UpdateAdminUserDto,
+} from "./dto/user-admin.dto.js";
 
 @ApiTags("admin")
 @Controller("api/v1/admin/users")
@@ -20,9 +40,23 @@ export class AdminUsersController {
   @Permissions(PermissionFlags.UserRead)
   @ApiOperation({ summary: "List directory users" })
   @ApiResponse({ status: 200, type: AdminUserListDto })
-  async list(@Query() query: ListAdminUsersQueryDto): Promise<AdminUserListDto> {
-    const users = await this.adminUsersService.list(query.search, query.limit ?? 50);
+  async list(
+    @Query() query: ListAdminUsersQueryDto,
+  ): Promise<AdminUserListDto> {
+    const users = await this.adminUsersService.list(
+      query.search,
+      query.limit ?? 50,
+    );
     return { users };
+  }
+
+  /** Creates a directory user with an initial password. */
+  @Post()
+  @Permissions(PermissionFlags.UserWrite)
+  @ApiOperation({ summary: "Create a directory user" })
+  @ApiResponse({ status: 201, type: AdminUserDto })
+  async create(@Body() body: CreateAdminUserDto): Promise<AdminUserDto> {
+    return this.adminUsersService.create(body);
   }
 
   /** Returns a single directory user. */
@@ -39,13 +73,17 @@ export class AdminUsersController {
   @Permissions(PermissionFlags.UserWrite)
   @ApiOperation({ summary: "Update a directory user" })
   @ApiResponse({ status: 200, type: AdminUserDto })
-  async update(@Param("id") id: string, @Body() body: UpdateAdminUserDto): Promise<AdminUserDto> {
+  async update(
+    @Param("id") id: string,
+    @Body() body: UpdateAdminUserDto,
+  ): Promise<AdminUserDto> {
     return this.adminUsersService.update(id, body);
   }
 
   /** Deletes a directory user. */
   @Delete(":id")
   @Permissions(PermissionFlags.UserWrite)
+  @HttpCode(204)
   @ApiOperation({ summary: "Delete a directory user" })
   @ApiResponse({ status: 204, description: "The user was deleted" })
   async remove(@Param("id") id: string): Promise<void> {

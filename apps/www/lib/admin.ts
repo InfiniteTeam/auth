@@ -238,6 +238,18 @@ export async function listUsers(search?: string): Promise<AdminUser[]> {
   return data.users;
 }
 
+/** Creates a directory user with an initial password. */
+export async function createUser(input: {
+  email: string;
+  displayName: string;
+  password: string;
+}): Promise<AdminUser> {
+  return apiRequest<AdminUser>('/api/v1/admin/users', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 /** Updates a directory user. */
 export async function updateUser(
   id: string,
