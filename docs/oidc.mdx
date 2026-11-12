@@ -47,7 +47,7 @@ recorded in `TAILSCALE_CLIENT_SECRET`.
 ## Consumer SDK — `@inftkr/auth-sdk`
 
 For services that want to integrate, use
-[`@inftkr/auth-sdk`](../packages/auth-sdk).
+[`@inftkr/auth-sdk`](https://www.npmjs.com/package/@inftkr/auth-sdk).
 
 ```ts
 import { OidcClient } from "@inftkr/auth-sdk";
@@ -73,12 +73,12 @@ The SDK provides:
 - **RP-Initiated Logout** (OIDC RP-Initiated Logout 1.0)
 - **Userinfo retrieval**
 
-See the [API Reference](/docs/api) for full details on every SDK member.
+See the [API Reference](/docs/api/auth-sdk) for full details on every SDK member.
 
 ## Integration with the shared client (`@inftkr/auth-core`)
 
 First-party apps (backend services, Nest.js guards, React frontends) use
-[`@inftkr/auth-core`](../packages/auth-core) instead of the SDK:
+[`@inftkr/auth-core`](https://github.com/InfiniteTeam/auth/tree/develop/packages/auth-core) instead of the SDK:
 
 - `AuthApiClient` — typed HTTP client for `POST /api/v1/auth/ldap`,
   `DELETE /api/v1/session`, etc.
