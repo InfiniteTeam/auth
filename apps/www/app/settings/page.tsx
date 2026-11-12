@@ -99,15 +99,22 @@ const LINKABLE_PROVIDERS = [
 
 type LinkableProviderId = (typeof LINKABLE_PROVIDERS)[number]['id'];
 
-function SocialConnect() {
+function SocialConnect({ linked, loadError, primaryProvider }: {
+  linked: LinkedSocial[] | null;
+  loadError: string | null;
+  primaryProvider: string;
+}) {
   const { signInSocial, isLoading } = useSignIn(BACKEND_URL);
-  const { session } = useSession({ baseUrl: BACKEND_URL });
   const [pending, setPending] = useState<LinkableProviderId | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const providers = session
-    ? LINKABLE_PROVIDERS.filter((provider) => provider.id !== session.user.provider)
-    : LINKABLE_PROVIDERS;
+  const providers = linked
+    ? LINKABLE_PROVIDERS.filter(
+        (provider) =>
+          provider.id !== primaryProvider &&
+          !linked.some((social) => social.provider === provider.id),
+      )
+    : [];
 
   const onConnect = useCallback(
     async (provider: LinkableProviderId) => {
@@ -130,9 +137,9 @@ function SocialConnect() {
         <h2 className="text-base font-medium">소셜 계정 연결</h2>
         <p className="mt-1">다른 소셜 계정을 연결하면 그 계정으로도 로그인할 수 있습니다.</p>
       </div>
-      {error ? (
+      {error || loadError ? (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{error || loadError}</AlertDescription>
         </Alert>
       ) : null}
       <div className="flex flex-wrap gap-2">
@@ -165,6 +172,22 @@ function AccountTab({
   // blocks a legitimate LDAP user from managing their password.
   const policy = useEmailDomainPolicy(true);
   const ldapEligible = policy?.domainAllowed !== false;
+  const [linked, setLinked] = useState<LinkedSocial[] | null>(null);
+  const [linkedError, setLinkedError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    listLinkedSocials()
+      .then((list) => {
+        if (!cancelled) setLinked(list);
+      })
+      .catch(() => {
+        if (!cancelled) setLinkedError('연결된 소셜 계정을 불러오지 못했습니다.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="account-sections flex flex-col gap-6">
@@ -177,8 +200,13 @@ function AccountTab({
           <span>{session.user.roles.join(', ') || 'user'}</span>
         </div>
       </div>
-      <SocialConnect />
-      <SocialManage />
+      <SocialConnect linked={linked} loadError={linkedError} primaryProvider={session.user.provider} />
+      <SocialManage
+        linked={linked ?? []}
+        onUnlinked={(provider) =>
+          setLinked((list) => list?.filter((social) => social.provider !== provider) ?? [])
+        }
+      />
       <PasswordCard isLdap={session.user.provider === 'ldap'} ldapEligible={ldapEligible} />
       <EmailChangeCard currentEmail={session.user.email} policy={policy} />
       <Button size="lg" variant="destructive" disabled={signingOut} onClick={onSignOut}>
@@ -190,23 +218,8 @@ function AccountTab({
   );
 }
 
-function SocialManage() {
-  const [linked, setLinked] = useState<LinkedSocial[]>([]);
+function SocialManage({ linked, onUnlinked }: { linked: LinkedSocial[]; onUnlinked: (provider: string) => void }) {
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    listLinkedSocials()
-      .then((list) => {
-        if (!cancelled) setLinked(list);
-      })
-      .catch(() => {
-        if (!cancelled) setError('연결된 소셜 계정을 불러오지 못했습니다.');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const onUnlink = useCallback(async (provider: string) => {
     if (!window.confirm(`${provider} 연결을 해제할까요?`)) {
@@ -214,12 +227,12 @@ function SocialManage() {
     }
     try {
       await unlinkSocial(provider);
-      setLinked((prev) => prev.filter((s) => s.provider !== provider));
+      onUnlinked(provider);
       setError(null);
     } catch {
       setError('소셜 연결 해제에 실패했습니다. 마지막 로그인 수단은 해제할 수 없습니다.');
     }
-  }, []);
+  }, [onUnlinked]);
 
   if (linked.length === 0) {
     return null;
