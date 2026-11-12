@@ -44,13 +44,13 @@ Tailscale is configured in its admin console with the issuer
 `https://auth.inft.kr`. The client credentials are seeded into the backend and
 recorded in `TAILSCALE_CLIENT_SECRET`.
 
-## Consumer SDK — `@infiniteteam/auth-sdk`
+## Consumer SDK — `@inftkr/auth-sdk`
 
 For services that want to integrate, use
-[`@infiniteteam/auth-sdk`](../packages/auth-sdk).
+[`@inftkr/auth-sdk`](../packages/auth-sdk).
 
 ```ts
-import { OidcClient } from "@infiniteteam/auth-sdk";
+import { OidcClient } from "@inftkr/auth-sdk";
 
 const client = new OidcClient({
   issuerUrl: "https://auth.inft.kr",
