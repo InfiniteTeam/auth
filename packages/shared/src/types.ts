@@ -145,6 +145,12 @@ export interface AdminGroup {
   displayName: string;
   /** Ids of member users. */
   members: string[];
+  /** Higher priority groups take precedence. */
+  priority: number;
+  /** Permission bitfield as a decimal string. */
+  permissions: string;
+  /** Whether this is the immutable platform admin group. */
+  isPlatformAdmin: boolean;
 }
 
 /**

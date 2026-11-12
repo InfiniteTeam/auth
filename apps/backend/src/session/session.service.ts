@@ -13,6 +13,7 @@ import type { AuthProvider, Role, Session, SessionUser } from "@inftkr/shared";
 import { SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@inftkr/shared";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { LldapService } from "../lldap/lldap.service.js";
 
 /** HTTP-only session cookie options. `secure` is set per environment. */
 const { secure: _secure, ...BASE_SESSION_COOKIE } = SESSION_COOKIE_OPTIONS;
@@ -43,6 +44,7 @@ export class SessionService {
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly prisma: PrismaService,
+    private readonly lldap: LldapService,
   ) {}
 
   /**
@@ -142,7 +144,19 @@ export class SessionService {
       return null;
     }
 
-    return this.toSession(row);
+    const permissions = await this.lldap.permissionsFor(row.userId);
+    const current = await this.prisma.session.findUnique({ where: { id } });
+    if (!current || current.revokedAt || current.expiresAt.getTime() < Date.now()) {
+      return null;
+    }
+    if (permissions !== current.permissions) {
+      const result = await this.prisma.session.updateMany({
+        where: { id, revokedAt: null, expiresAt: { gt: new Date() } },
+        data: { permissions },
+      });
+      if (result.count === 0) return null;
+    }
+    return this.toSession({ ...current, permissions });
   }
 
   /**

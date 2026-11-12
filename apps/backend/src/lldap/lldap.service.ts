@@ -13,6 +13,7 @@ import { DN } from "ldapts";
 import { PermissionBitField } from "@inftkr/shared";
 import type { Role } from "@inftkr/shared";
 import { APP_CONFIG, type AppConfig } from "../config/config.js";
+import { PrismaService } from "../prisma/prisma.service.js";
 
 /** Result of a successful lldap authentication. */
 export interface LldapUser {
@@ -106,7 +107,10 @@ async function encodePasswordModify(
 
 @Injectable()
 export class LldapService {
-  constructor(@Inject(APP_CONFIG) private readonly config: AppConfig) {}
+  constructor(
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Authenticates a user against lldap via `POST /auth/simple/login`.
@@ -508,8 +512,9 @@ export class LldapService {
   /**
    * Resolves a user's permission bitfield from lldap group membership.
    *
-   * Members of the configured admin group receive every permission; everyone
-   * else receives none. Returns `"0"` when lldap is unreachable.
+   * Members of the configured admin group receive every permission. For other
+   * users, the highest priority policy wins; tied policies combine bits.
+   * Returns `"0"` when lldap or policy storage is unreachable.
    */
   async permissionsFor(userId: string): Promise<string> {
     const jwt = await this.serviceToken();
@@ -532,18 +537,36 @@ export class LldapService {
       const data = (await res.json()) as {
         data?: {
           groups?: {
-            id?: string;
+            id?: number;
             displayName?: string | null;
             users?: { id?: string }[];
           }[];
         };
+        errors?: unknown[];
       };
-      const isAdmin = data.data?.groups?.some(
-        (group) =>
-          group.displayName === this.config.lldapAdminGroupName &&
-          group.users?.some((member) => member.id === userId),
+      if (data.errors?.length) return "0";
+      const groups = data.data?.groups ?? [];
+      const memberships = groups.filter((group) =>
+        group.users?.some((member) => member.id === userId),
       );
-      return isAdmin ? PermissionBitField.All.toString() : "0";
+      const isAdmin = memberships.some(
+        (group) =>
+          group.displayName === this.config.lldapAdminGroupName,
+      );
+      if (isAdmin) return PermissionBitField.All.toString();
+      const groupIds = memberships
+        .map((group) => group.id)
+        .filter((id): id is number => typeof id === "number");
+      if (!groupIds.length) return "0";
+      const policies = await this.prisma.groupPolicy.findMany({
+        where: { groupId: { in: groupIds } },
+      });
+      if (!policies.length) return "0";
+      const highest = Math.max(...policies.map((policy) => policy.priority));
+      return policies
+        .filter((policy) => policy.priority === highest)
+        .reduce((bits, policy) => bits | BigInt(policy.permissions), 0n)
+        .toString();
     } catch {
       return "0";
     }

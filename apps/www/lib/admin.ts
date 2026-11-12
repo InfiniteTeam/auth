@@ -191,6 +191,9 @@ export interface AdminGroup {
   id: number;
   displayName: string;
   members: string[];
+  priority: number;
+  permissions: string;
+  isPlatformAdmin: boolean;
 }
 
 /** A session row as returned by the admin API. */
@@ -279,6 +282,17 @@ export async function createGroup(displayName: string): Promise<AdminGroup> {
   return apiRequest<AdminGroup>('/api/v1/admin/groups', {
     method: 'POST',
     body: JSON.stringify({ displayName }),
+  });
+}
+
+/** Updates a directory group's name, priority, or permissions. */
+export async function updateGroup(
+  id: number,
+  input: { displayName?: string; priority?: number; permissions?: string },
+): Promise<AdminGroup> {
+  return apiRequest<AdminGroup>(`/api/v1/admin/groups/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
   });
 }
 

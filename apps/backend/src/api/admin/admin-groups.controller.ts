@@ -2,7 +2,9 @@
  * Admin directory group controller — `/api/v1/admin/groups` (lldap-backed).
  */
 
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import type { Request } from "express";
+import type { Session } from "@inftkr/shared";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { PermissionFlags } from "@inftkr/shared";
 import { Permissions, PermissionsGuard } from "../../session/permissions.guard.js";
@@ -34,13 +36,13 @@ export class AdminGroupsController {
     return this.adminGroupsService.create(body.displayName);
   }
 
-  /** Renames a directory group. */
+  /** Updates a directory group's name, priority, or permissions. */
   @Patch(":id")
   @Permissions(PermissionFlags.GroupWrite)
-  @ApiOperation({ summary: "Rename a directory group" })
+  @ApiOperation({ summary: "Update a directory group" })
   @ApiResponse({ status: 200, type: AdminGroupDto })
-  async update(@Param("id", ParseIntPipe) id: number, @Body() body: UpdateAdminGroupDto): Promise<AdminGroupDto> {
-    return this.adminGroupsService.update(id, body.displayName);
+  async update(@Param("id", ParseIntPipe) id: number, @Body() body: UpdateAdminGroupDto, @Req() req: Request & { session?: Session }): Promise<AdminGroupDto> {
+    return this.adminGroupsService.update(id, body, req.session?.user.permissions ?? "0");
   }
 
   /** Deletes a directory group. */
@@ -58,8 +60,8 @@ export class AdminGroupsController {
   @Permissions(PermissionFlags.GroupWrite)
   @HttpCode(204)
   @ApiOperation({ summary: "Add a user to a group" })
-  async addMember(@Param("id", ParseIntPipe) id: number, @Body() body: GroupMemberDto): Promise<void> {
-    await this.adminGroupsService.addMember(id, body.userId);
+  async addMember(@Param("id", ParseIntPipe) id: number, @Body() body: GroupMemberDto, @Req() req: Request & { session?: Session }): Promise<void> {
+    await this.adminGroupsService.addMember(id, body.userId, req.session?.user.permissions ?? "0");
   }
 
   /** Removes a user from a group. */
