@@ -15,7 +15,9 @@ function createService(overrides: Record<string, unknown> = {}) {
   const prisma = {
     oidcClient: {
       findMany: vi.fn(async () => []),
+      findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
       delete: vi.fn(async () => ({})),
     },
   };
@@ -38,14 +40,20 @@ describe("AdminClientsService", () => {
       clientSecret: "abcDEF123-_xyzABCXYZ-0aA0aA0aA0aA0aA0aA",
       grantTypes: ["authorization_code"],
       responseTypes: ["code"],
-      redirectUris: ["https://login.tailscale.com/a/oauth_response"],
+      redirectUris: [
+        "https://app.example.com/callback",
+        "https://admin.example.com/callback",
+      ],
       scopes: ["openid", "profile", "email"],
       metadata: {
         client_id: "123456789012345678",
         client_secret: "abcDEF123-_xyzABCXYZ-0aA0aA0aA0aA0aA0aA",
         client_secret_expires_at: 0,
-        client_name: "Tailscale",
-        redirect_uris: ["https://login.tailscale.com/a/oauth_response"],
+        client_name: "Example",
+        redirect_uris: [
+          "https://app.example.com/callback",
+          "https://admin.example.com/callback",
+        ],
         grant_types: ["authorization_code"],
         response_types: ["code"],
         scope: "openid profile email",
@@ -58,20 +66,63 @@ describe("AdminClientsService", () => {
     );
 
     const result = await service.create({
-      clientName: "Tailscale",
-      redirectUris: ["https://login.tailscale.com/a/oauth_response"],
+      clientName: "Example",
+      redirectUris: [
+        "https://app.example.com/callback",
+        "https://admin.example.com/callback",
+      ],
     });
 
     expect(result.clientId).toMatch(/^\d{17,19}$/);
     expect(result.clientSecret).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(result.clientName).toBe("Tailscale");
+    expect(result.clientName).toBe("Example");
     expect(result.tokenEndpointAuthMethod).toBe("client_secret_post");
     expect(prisma.oidcClient.create).toHaveBeenCalledTimes(1);
-    const createCall = (prisma.oidcClient.create as ReturnType<typeof vi.fn>).mock
-      .calls[0]![0] as { data: { metadata: Record<string, unknown> } };
+    const createCall = (prisma.oidcClient.create as ReturnType<typeof vi.fn>)
+      .mock.calls[0]![0] as { data: { metadata: Record<string, unknown> } };
     expect(createCall.data.metadata.client_secret_expires_at).toBe(0);
     expect(createCall.data.metadata.scope).toBe("openid profile email");
     expect(createCall.data.metadata.client_id).toMatch(/^\d+$/);
+    expect(createCall.data.metadata.redirect_uris).toEqual(row.redirectUris);
+    expect(result.redirectUris).toEqual(row.redirectUris);
+  });
+
+  it("updates all redirect URIs in both client metadata and the database column", async () => {
+    const { service, prisma } = createService();
+    const redirectUris = [
+      "https://app.example.com/callback",
+      "https://admin.example.com/callback",
+    ];
+    const row = {
+      clientId: "1",
+      clientSecret: "secret",
+      grantTypes: ["authorization_code"],
+      responseTypes: ["code"],
+      redirectUris,
+      scopes: ["openid"],
+      metadata: { client_name: "Example", redirect_uris: redirectUris },
+      createdAt: new Date(),
+    };
+    prisma.oidcClient.findUnique.mockResolvedValue({
+      ...row,
+      redirectUris: ["https://old.example.com/callback"],
+      metadata: {
+        client_name: "Example",
+        redirect_uris: ["https://old.example.com/callback"],
+      },
+    });
+    prisma.oidcClient.update.mockResolvedValue(row);
+
+    const result = await service.update("1", { redirectUris });
+
+    expect(prisma.oidcClient.update).toHaveBeenCalledWith({
+      where: { clientId: "1" },
+      data: {
+        redirectUris,
+        metadata: { client_name: "Example", redirect_uris: redirectUris },
+      },
+    });
+    expect(result.redirectUris).toEqual(redirectUris);
   });
 
   it("applies defaults for omitted registration fields", async () => {
