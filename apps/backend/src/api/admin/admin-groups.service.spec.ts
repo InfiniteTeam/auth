@@ -72,6 +72,22 @@ describe("AdminGroupsService", () => {
     expect(lldap.addUserToGroup).not.toHaveBeenCalled();
   });
 
+  it("rejects lowering priority when it exposes stronger permissions for a member", async () => {
+    const { service, prisma, lldap } = createService();
+    lldap.listGroups.mockResolvedValue([
+      { id: 1, displayName: "admins", members: ["admin"] },
+      { id: 2, displayName: "editors", members: ["editor"] },
+      { id: 3, displayName: "powerful", members: ["editor"] },
+    ]);
+    prisma.groupPolicy.findMany.mockResolvedValue([
+      { groupId: 2, priority: 5, permissions: "64" },
+      { groupId: 3, priority: 1, permissions: "1024" },
+    ]);
+
+    await expect(service.update(2, { priority: 0 }, "64")).rejects.toThrow(ForbiddenException);
+    expect(prisma.groupPolicy.upsert).not.toHaveBeenCalled();
+  });
+
   it("still allows a fully privileged admin to add platform administrators", async () => {
     const { service, lldap } = createService();
     await service.addMember(1, "editor", PermissionBitField.All.toString());

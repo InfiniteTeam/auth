@@ -64,10 +64,27 @@ export class AdminGroupsService {
       }
     }
     if (input.displayName !== undefined) this.assertAvailableName(input.displayName);
-    const target = await this.assertNotAdminGroup(groupId);
+    const groups = await this.list();
+    const target = groups.find((group) => group.id === groupId);
+    if (!target) throw new NotFoundException(`Unknown group "${groupId}"`);
+    if (target.isPlatformAdmin) {
+      throw new BadRequestException("The platform admin group cannot be modified");
+    }
     if ((input.priority !== undefined || input.permissions !== undefined) &&
         (BigInt(input.permissions ?? target.permissions) & ~BigInt(actorPermissions)) !== 0n) {
       throw new ForbiddenException("Cannot grant permissions you do not hold");
+    }
+    if (input.priority !== undefined || input.permissions !== undefined) {
+      const updatedGroups = groups.map((group) => group.id === groupId
+        ? { ...group, priority: input.priority ?? group.priority, permissions: input.permissions ?? group.permissions }
+        : group);
+      for (const member of target.members) {
+        const before = this.effectivePermissions(groups, member);
+        const after = this.effectivePermissions(updatedGroups, member);
+        if ((after & ~before & ~BigInt(actorPermissions)) !== 0n) {
+          throw new ForbiddenException("Cannot grant permissions you do not hold");
+        }
+      }
     }
     try {
       if (input.displayName !== undefined) {
@@ -90,8 +107,8 @@ export class AdminGroupsService {
     } catch (error) {
       throw this.toHttp(error);
     }
-    const groups = await this.list();
-    const updated = groups.find((g) => g.id === groupId);
+    const refreshed = await this.list();
+    const updated = refreshed.find((g) => g.id === groupId);
     if (!updated) throw new NotFoundException(`Unknown group "${groupId}"`);
     return updated;
   }
@@ -140,14 +157,14 @@ export class AdminGroupsService {
     }
   }
 
-  private async assertNotAdminGroup(groupId: number): Promise<AdminGroupDto> {
-    const groups = await this.list();
-    const target = groups.find((g) => g.id === groupId);
-    if (target && target.displayName === this.config.lldapAdminGroupName) {
-      throw new BadRequestException("The platform admin group cannot be modified");
-    }
-    if (!target) throw new NotFoundException(`Unknown group "${groupId}"`);
-    return target;
+  private effectivePermissions(groups: AdminGroupDto[], userId: string): bigint {
+    const memberships = groups.filter((group) => group.members.includes(userId));
+    if (memberships.some((group) => group.isPlatformAdmin)) return PermissionBitField.All;
+    if (!memberships.length) return 0n;
+    const highest = Math.max(...memberships.map((group) => group.priority));
+    return memberships
+      .filter((group) => group.priority === highest)
+      .reduce((bits, group) => bits | BigInt(group.permissions), 0n);
   }
 
   private assertAvailableName(displayName: string): void {

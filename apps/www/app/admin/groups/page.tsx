@@ -99,6 +99,7 @@ function GroupEditor({
           <Input
             id={`group-name-${group.id}`}
             value={name}
+            disabled={pending}
             onChange={(e) => {
               setName(e.target.value);
               setNameEdited(true);
@@ -114,6 +115,7 @@ function GroupEditor({
             min={0}
             max={1000}
             value={priority}
+            disabled={pending}
             onChange={(e) => {
               setPriority(e.target.value);
               setPriorityEdited(true);
@@ -135,6 +137,7 @@ function GroupEditor({
           <Label key={name} className="flex items-center gap-2 font-normal">
             <Checkbox
               checked={(permissions & flag) === flag}
+              disabled={pending}
               onCheckedChange={(checked) => {
                 setPermissions((current) =>
                   checked ? current | flag : current & ~flag,
